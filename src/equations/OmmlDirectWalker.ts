@@ -1,18 +1,13 @@
 import type { XmlNode, ConversionWarning } from "../types.js";
 import {
-  getChild,
   getChildren,
   getTextContent,
   getAllChildTags,
+  oGetChildSequence,
+  oGetChildByRef,
+  type OrderedEntry,
 } from "../reader/XmlParser.js";
 import {
-  getOmmlChildE,
-  getOmmlChildSub,
-  getOmmlChildSup,
-  getOmmlChildNum,
-  getOmmlChildDen,
-  getOmmlChildDeg,
-  getOmmlChildFName,
   getOmmlPropVal,
   isOmmlPropOn,
 } from "./OmmlExtractor.js";
@@ -38,6 +33,7 @@ export function ommlToLatex(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number = 0,
+  ordered?: OrderedEntry[],
 ): string {
   if (depth > MAX_RECURSION_DEPTH) {
     ctx.warnings.push({
@@ -48,14 +44,26 @@ export function ommlToLatex(
     return "\\ldots";
   }
 
-  const tags = getAllChildTags(node);
   const parts: string[] = [];
 
-  for (const tag of tags) {
-    const children = getChildren(node, tag);
-    for (const child of children) {
-      const result = processOmmlTag(tag, child, ctx, depth);
+  if (ordered) {
+    const seq = oGetChildSequence(ordered);
+    for (const { tag, index } of seq) {
+      const children = getChildren(node, tag);
+      const child = children[index];
+      if (!child) continue;
+      const childOrdered = oGetChildByRef(ordered, tag, index);
+      const result = processOmmlTag(tag, child, ctx, depth, childOrdered);
       if (result) parts.push(result);
+    }
+  } else {
+    const tags = getAllChildTags(node);
+    for (const tag of tags) {
+      const children = getChildren(node, tag);
+      for (const child of children) {
+        const result = processOmmlTag(tag, child, ctx, depth);
+        if (result) parts.push(result);
+      }
     }
   }
 
@@ -72,63 +80,79 @@ function processOmmlTag(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
   switch (tag) {
     case "m:f":
-      return handleFrac(node, ctx, depth);
+      return handleFrac(node, ctx, depth, ordered);
     case "m:nary":
-      return handleNary(node, ctx, depth);
+      return handleNary(node, ctx, depth, ordered);
     case "m:rad":
-      return handleRad(node, ctx, depth);
+      return handleRad(node, ctx, depth, ordered);
     case "m:acc":
-      return handleAcc(node, ctx, depth);
+      return handleAcc(node, ctx, depth, ordered);
     case "m:bar":
-      return handleBar(node, ctx, depth);
+      return handleBar(node, ctx, depth, ordered);
     case "m:func":
-      return handleFunc(node, ctx, depth);
+      return handleFunc(node, ctx, depth, ordered);
     case "m:eqArr":
-      return handleEqArr(node, ctx, depth);
+      return handleEqArr(node, ctx, depth, ordered);
     case "m:groupChr":
-      return handleGroupChr(node, ctx, depth);
+      return handleGroupChr(node, ctx, depth, ordered);
     case "m:limLow":
-      return handleLimLow(node, ctx, depth);
+      return handleLimLow(node, ctx, depth, ordered);
     case "m:limUpp":
-      return handleLimUpp(node, ctx, depth);
+      return handleLimUpp(node, ctx, depth, ordered);
     case "m:sPre":
-      return handleSPre(node, ctx, depth);
+      return handleSPre(node, ctx, depth, ordered);
     case "m:sSub":
-      return handleSSub(node, ctx, depth);
+      return handleSSub(node, ctx, depth, ordered);
     case "m:sSup":
-      return handleSSup(node, ctx, depth);
+      return handleSSup(node, ctx, depth, ordered);
     case "m:sSubSup":
-      return handleSSubSup(node, ctx, depth);
+      return handleSSubSup(node, ctx, depth, ordered);
     case "m:m":
-      return handleMatrix(node, ctx, depth);
+      return handleMatrix(node, ctx, depth, ordered);
     case "m:d":
-      return handleDelimiter(node, ctx, depth);
+      return handleDelimiter(node, ctx, depth, ordered);
     case "m:borderBox":
-      return handleBorderBox(node, ctx, depth);
+      return handleBorderBox(node, ctx, depth, ordered);
     case "m:phant":
-      return handlePhantom(node, ctx, depth);
+      return handlePhantom(node, ctx, depth, ordered);
     case "m:r":
       return handleRun(node);
     case "m:t":
       return mapSymbol(getTextContent(node));
     case "m:e":
-      return ommlToLatex(node, ctx, depth + 1);
+      return ommlToLatex(node, ctx, depth + 1, ordered);
     case "m:oMath":
-      return ommlToLatex(node, ctx, depth + 1);
+      return ommlToLatex(node, ctx, depth + 1, ordered);
     default:
       return "";
   }
 }
 
-function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function recurseChild(
+  parentNode: XmlNode,
+  childTag: string,
+  ctx: WalkerContext,
+  depth: number,
+  parentOrdered?: OrderedEntry[],
+  childIndex: number = 0,
+): string {
+  const children = getChildren(parentNode, childTag);
+  const child = children[childIndex];
+  if (!child) return "";
+  const childOrdered = parentOrdered
+    ? oGetChildByRef(parentOrdered, childTag, childIndex)
+    : undefined;
+  return ommlToLatex(child, ctx, depth + 1, childOrdered);
+}
+
+function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const fracType = getOmmlPropVal(node, "m:fPr", "m:type", "m:val");
-  const num = getOmmlChildNum(node);
-  const den = getOmmlChildDen(node);
-  const numLatex = num ? ommlToLatex(num, ctx, depth + 1) : "";
-  const denLatex = den ? ommlToLatex(den, ctx, depth + 1) : "";
+  const numLatex = recurseChild(node, "m:num", ctx, depth, ordered);
+  const denLatex = recurseChild(node, "m:den", ctx, depth, ordered);
 
   switch (fracType) {
     case "noBar":
@@ -142,74 +166,62 @@ function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number): string {
   }
 }
 
-function handleNary(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function handleNary(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const chr = getOmmlPropVal(node, "m:naryPr", "m:chr", "m:val") ?? "\u222B";
   const subHide = isOmmlPropOn(node, "m:naryPr", "m:subHide");
   const supHide = isOmmlPropOn(node, "m:naryPr", "m:supHide");
 
   const cmd = NARY_MAP[chr] ?? `\\int`;
-  const sub = getOmmlChildSub(node);
-  const sup = getOmmlChildSup(node);
-  const e = getOmmlChildE(node);
 
   let result = cmd;
-  if (!subHide && sub) {
-    const subLatex = ommlToLatex(sub, ctx, depth + 1);
+  if (!subHide) {
+    const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
     if (subLatex) result += `_{${subLatex}}`;
   }
-  if (!supHide && sup) {
-    const supLatex = ommlToLatex(sup, ctx, depth + 1);
+  if (!supHide) {
+    const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
     if (supLatex) result += `^{${supLatex}}`;
   }
-  if (e) {
-    result += ` ${ommlToLatex(e, ctx, depth + 1)}`;
-  }
+  const eLatex = recurseChild(node, "m:e", ctx, depth, ordered);
+  if (eLatex) result += ` ${eLatex}`;
   return result;
 }
 
-function handleRad(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function handleRad(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const degHide = isOmmlPropOn(node, "m:radPr", "m:degHide");
-  const deg = getOmmlChildDeg(node);
-  const e = getOmmlChildE(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
 
-  if (degHide || !deg) {
-    return `\\sqrt{${base}}`;
-  }
-  const degLatex = ommlToLatex(deg, ctx, depth + 1);
+  if (degHide) return `\\sqrt{${base}}`;
+  const degLatex = recurseChild(node, "m:deg", ctx, depth, ordered);
   if (!degLatex) return `\\sqrt{${base}}`;
   return `\\sqrt[${degLatex}]{${base}}`;
 }
 
-function handleAcc(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function handleAcc(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const chr = getOmmlPropVal(node, "m:accPr", "m:chr", "m:val") ?? "\u0302";
-  const e = getOmmlChildE(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
   const cmd = ACCENT_MAP[chr] ?? "\\hat";
   return `${cmd}{${base}}`;
 }
 
-function handleBar(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function handleBar(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const pos = getOmmlPropVal(node, "m:barPr", "m:pos", "m:val") ?? "top";
-  const e = getOmmlChildE(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
   return pos === "bot" ? `\\underline{${base}}` : `\\overline{${base}}`;
 }
 
-function handleFunc(node: XmlNode, ctx: WalkerContext, depth: number): string {
-  const fName = getOmmlChildFName(node);
-  const e = getOmmlChildE(node);
-  const nameLatex = fName ? ommlToLatex(fName, ctx, depth + 1) : "";
-  const argLatex = e ? ommlToLatex(e, ctx, depth + 1) : "";
+function handleFunc(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+  const nameLatex = recurseChild(node, "m:fName", ctx, depth, ordered);
+  const argLatex = recurseChild(node, "m:e", ctx, depth, ordered);
   const knownFunc = OPERATOR_MAP[nameLatex.trim()];
   const funcCmd = knownFunc ?? nameLatex;
   return `${funcCmd}{${argLatex}}`;
 }
 
-function handleEqArr(node: XmlNode, ctx: WalkerContext, depth: number): string {
+function handleEqArr(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
   const rows = getChildren(node, "m:e");
   if (rows.length === 0) return "";
-  const rowLatex = rows.map((r) => ommlToLatex(r, ctx, depth + 1));
+  const rowLatex = rows.map((_, i) => recurseChild(node, "m:e", ctx, depth, ordered, i));
   return `\\begin{aligned}${rowLatex.join(" \\\\")}\\end{aligned}`;
 }
 
@@ -217,12 +229,12 @@ function handleGroupChr(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
   const chr =
     getOmmlPropVal(node, "m:groupChrPr", "m:chr", "m:val") ?? "\u23DF";
   const pos = getOmmlPropVal(node, "m:groupChrPr", "m:pos", "m:val") ?? "bot";
-  const e = getOmmlChildE(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
 
   const mapping = GROUP_CHR_MAP[chr];
   if (mapping) {
@@ -236,11 +248,10 @@ function handleLimLow(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
-  const e = getOmmlChildE(node);
-  const lim = getChild(node, "m:lim");
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const limLatex = lim ? ommlToLatex(lim, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const limLatex = recurseChild(node, "m:lim", ctx, depth, ordered);
   if (isOperatorLike(base)) {
     return `${base}_{${limLatex}}`;
   }
@@ -251,43 +262,35 @@ function handleLimUpp(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
-  const e = getOmmlChildE(node);
-  const lim = getChild(node, "m:lim");
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const limLatex = lim ? ommlToLatex(lim, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const limLatex = recurseChild(node, "m:lim", ctx, depth, ordered);
   if (isOperatorLike(base)) {
     return `${base}^{${limLatex}}`;
   }
   return `\\overset{${limLatex}}{${base}}`;
 }
 
-function handleSPre(node: XmlNode, ctx: WalkerContext, depth: number): string {
-  const sub = getOmmlChildSub(node);
-  const sup = getOmmlChildSup(node);
-  const e = getOmmlChildE(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const subLatex = sub ? ommlToLatex(sub, ctx, depth + 1) : "";
-  const supLatex = sup ? ommlToLatex(sup, ctx, depth + 1) : "";
+function handleSPre(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
+  const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
   let pre = "{}";
   if (subLatex) pre += `_{${subLatex}}`;
   if (supLatex) pre += `^{${supLatex}}`;
   return `${pre}${base}`;
 }
 
-function handleSSub(node: XmlNode, ctx: WalkerContext, depth: number): string {
-  const e = getOmmlChildE(node);
-  const sub = getOmmlChildSub(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const subLatex = sub ? ommlToLatex(sub, ctx, depth + 1) : "";
+function handleSSub(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
   return `${base}_{${subLatex}}`;
 }
 
-function handleSSup(node: XmlNode, ctx: WalkerContext, depth: number): string {
-  const e = getOmmlChildE(node);
-  const sup = getOmmlChildSup(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const supLatex = sup ? ommlToLatex(sup, ctx, depth + 1) : "";
+function handleSSup(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
   return `${base}^{${supLatex}}`;
 }
 
@@ -295,13 +298,11 @@ function handleSSubSup(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
-  const e = getOmmlChildE(node);
-  const sub = getOmmlChildSub(node);
-  const sup = getOmmlChildSup(node);
-  const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
-  const subLatex = sub ? ommlToLatex(sub, ctx, depth + 1) : "";
-  const supLatex = sup ? ommlToLatex(sup, ctx, depth + 1) : "";
+  const base = recurseChild(node, "m:e", ctx, depth, ordered);
+  const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
+  const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
   return `${base}_{${subLatex}}^{${supLatex}}`;
 }
 
@@ -309,6 +310,7 @@ function handleMatrix(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
   const rows = getChildren(node, "m:mr");
   if (rows.length === 0) return "";
@@ -316,10 +318,16 @@ function handleMatrix(
   const rowsLatex: string[] = [];
   let maxCols = 0;
 
-  for (const row of rows) {
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]!;
+    const rowOrdered = ordered
+      ? oGetChildByRef(ordered, "m:mr", ri)
+      : undefined;
     const cells = getChildren(row, "m:e");
     maxCols = Math.max(maxCols, cells.length);
-    const cellsLatex = cells.map((cell) => ommlToLatex(cell, ctx, depth + 1));
+    const cellsLatex = cells.map((_, ci) =>
+      recurseChild(row, "m:e", ctx, depth, rowOrdered, ci),
+    );
     rowsLatex.push(cellsLatex.join(" & "));
   }
 
@@ -338,17 +346,23 @@ function handleDelimiter(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
   const begChr = getOmmlPropVal(node, "m:dPr", "m:begChr", "m:val") ?? "(";
   const endChr = getOmmlPropVal(node, "m:dPr", "m:endChr", "m:val") ?? ")";
 
   const elements = getChildren(node, "m:e");
-  const innerParts = elements.map((e) => ommlToLatex(e, ctx, depth + 1));
+  const innerParts = elements.map((_, i) =>
+    recurseChild(node, "m:e", ctx, depth, ordered, i),
+  );
 
   const hasMatrix = elements.length === 1 && containsMatrix(elements[0]!);
 
   if (hasMatrix) {
-    const matrixContent = getMatrixContent(elements[0]!, ctx, depth);
+    const eOrdered = ordered
+      ? oGetChildByRef(ordered, "m:e", 0)
+      : undefined;
+    const matrixContent = getMatrixContent(elements[0]!, ctx, depth, eOrdered);
     const env = getMatrixEnv(begChr, endChr);
     return matrixContent
       ? matrixContent
@@ -369,9 +383,9 @@ function handleBorderBox(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
-  const e = getOmmlChildE(node);
-  const inner = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const inner = recurseChild(node, "m:e", ctx, depth, ordered);
   return `\\boxed{${inner}}`;
 }
 
@@ -379,9 +393,9 @@ function handlePhantom(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string {
-  const e = getOmmlChildE(node);
-  const inner = e ? ommlToLatex(e, ctx, depth + 1) : "";
+  const inner = recurseChild(node, "m:e", ctx, depth, ordered);
   return `\\phantom{${inner}}`;
 }
 
@@ -460,15 +474,22 @@ function getMatrixContent(
   node: XmlNode,
   ctx: WalkerContext,
   depth: number,
+  ordered?: OrderedEntry[],
 ): string | null {
   const matrices = getChildren(node, "m:m");
   if (matrices.length > 0 && matrices[0]) {
-    return handleMatrix(matrices[0], ctx, depth + 1);
+    const mOrdered = ordered
+      ? oGetChildByRef(ordered, "m:m", 0)
+      : undefined;
+    return handleMatrix(matrices[0], ctx, depth + 1, mOrdered);
   }
   for (const tag of getAllChildTags(node)) {
     const children = getChildren(node, tag);
-    for (const child of children) {
-      const result = getMatrixContent(child, ctx, depth);
+    for (let i = 0; i < children.length; i++) {
+      const childOrdered = ordered
+        ? oGetChildByRef(ordered, tag, i)
+        : undefined;
+      const result = getMatrixContent(children[i]!, ctx, depth, childOrdered);
       if (result) return result;
     }
   }

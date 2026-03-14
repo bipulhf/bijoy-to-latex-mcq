@@ -16,7 +16,9 @@ import {
   hasChild,
   getAllChildTags,
   getAttr,
+  oGetChildByRef,
   type ChildRef,
+  type OrderedEntry,
 } from "../reader/XmlParser.js";
 import { isBijoyFont, hasBijoyMarkers } from "../bijoy/BijoyDetector.js";
 import {
@@ -39,6 +41,7 @@ interface ParserContext {
     imagesSkipped: number;
   };
   childOrder?: ChildRef[];
+  orderedEntries?: OrderedEntry[];
 }
 
 export function parseParagraph(
@@ -81,7 +84,11 @@ function processInOrder(
     const child = children[index];
     if (!child) continue;
 
-    processTagChild(tag, child, pNode, nodes, ctx);
+    const childOrdered = ctx.orderedEntries
+      ? oGetChildByRef(ctx.orderedEntries, tag, index)
+      : undefined;
+
+    processTagChild(tag, child, pNode, nodes, ctx, childOrdered);
   }
 }
 
@@ -106,16 +113,17 @@ function processTagChild(
   pNode: XmlNode,
   nodes: DocNode[],
   ctx: ParserContext,
+  childOrdered?: OrderedEntry[],
 ): void {
   switch (tag) {
     case "w:r":
       processRun(child, nodes, ctx);
       break;
     case "m:oMath":
-      processEquation(child, pNode, nodes, ctx);
+      processEquation(child, pNode, nodes, ctx, childOrdered);
       break;
     case "m:oMathPara":
-      processOmathPara(child, nodes, ctx);
+      processOmathPara(child, nodes, ctx, childOrdered);
       break;
     case "w:ins":
       processInsert(child, nodes, ctx);
@@ -275,16 +283,19 @@ function processEquation(
   _parentPNode: XmlNode,
   nodes: DocNode[],
   ctx: ParserContext,
+  orderedEntries?: OrderedEntry[],
 ): void {
   if (ctx.options.skipEquations) return;
 
   ctx.stats.totalEquations++;
 
   try {
-    const latex = ommlToLatex(ommlNode, {
-      warnings: ctx.warnings,
-      paragraphIndex: ctx.paragraphIndex,
-    });
+    const latex = ommlToLatex(
+      ommlNode,
+      { warnings: ctx.warnings, paragraphIndex: ctx.paragraphIndex },
+      0,
+      orderedEntries,
+    );
 
     if (!latex || latex.trim().length === 0) return;
 
@@ -316,18 +327,26 @@ function processOmathPara(
   omathParaNode: XmlNode,
   nodes: DocNode[],
   ctx: ParserContext,
+  parentOrdered?: OrderedEntry[],
 ): void {
   if (ctx.options.skipEquations) return;
 
   const oMaths = extractOmmlNodes(omathParaNode);
-  for (const oMath of oMaths) {
+  for (let mi = 0; mi < oMaths.length; mi++) {
+    const oMath = oMaths[mi]!;
     ctx.stats.totalEquations++;
 
+    const oMathOrdered = parentOrdered
+      ? oGetChildByRef(parentOrdered, "m:oMath", mi)
+      : undefined;
+
     try {
-      const latex = ommlToLatex(oMath, {
-        warnings: ctx.warnings,
-        paragraphIndex: ctx.paragraphIndex,
-      });
+      const latex = ommlToLatex(
+        oMath,
+        { warnings: ctx.warnings, paragraphIndex: ctx.paragraphIndex },
+        0,
+        oMathOrdered,
+      );
 
       if (!latex || latex.trim().length === 0) continue;
 

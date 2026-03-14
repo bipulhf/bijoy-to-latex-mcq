@@ -184,3 +184,20 @@ export function oGetChildSequence(entries: OrderedEntry[]): ChildRef[] {
   }
   return seq;
 }
+
+export function oGetChildByRef(
+  orderedEntries: OrderedEntry[],
+  tag: string,
+  index: number,
+): OrderedEntry[] | undefined {
+  let count = 0;
+  for (const entry of orderedEntries) {
+    if (tag in entry) {
+      if (count === index) {
+        return entry[tag] as OrderedEntry[];
+      }
+      count++;
+    }
+  }
+  return undefined;
+}

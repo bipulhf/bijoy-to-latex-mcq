@@ -10,6 +10,7 @@ import {
   getChildren,
   oFindChild,
   oGetChildSequence,
+  oGetChildByRef,
   type OrderedEntry,
   type ChildRef,
 } from "../reader/XmlParser.js";
@@ -91,7 +92,7 @@ function walkBody(
     if (!child) continue;
 
     const orderedChild = orderedBody
-      ? getOrderedChildByRef(orderedBody, tag, index)
+      ? oGetChildByRef(orderedBody, tag, index)
       : undefined;
 
     switch (tag) {
@@ -105,6 +106,7 @@ function walkBody(
           options: ctx.options,
           stats: ctx.stats,
           childOrder,
+          orderedEntries: orderedChild,
         });
         elements.push({ type: "paragraph", paragraph: para });
         paragraphIndex++;
@@ -161,19 +163,3 @@ function fallbackChildSequence(node: XmlNode): ChildRef[] {
   return seq;
 }
 
-function getOrderedChildByRef(
-  orderedEntries: OrderedEntry[],
-  tag: string,
-  index: number,
-): OrderedEntry[] | undefined {
-  let count = 0;
-  for (const entry of orderedEntries) {
-    if (tag in entry) {
-      if (count === index) {
-        return entry[tag] as OrderedEntry[];
-      }
-      count++;
-    }
-  }
-  return undefined;
-}
