@@ -16,7 +16,12 @@ import {
   getOmmlPropVal,
   isOmmlPropOn,
 } from "./OmmlExtractor.js";
-import { NARY_MAP, ACCENT_MAP, GROUP_CHR_MAP, DELIMITER_MAP } from "./AccentMap.js";
+import {
+  NARY_MAP,
+  ACCENT_MAP,
+  GROUP_CHR_MAP,
+  DELIMITER_MAP,
+} from "./AccentMap.js";
 import { OPERATOR_MAP } from "./OperatorMap.js";
 import { GREEK_MAP } from "./GreekMap.js";
 import { ARROW_MAP } from "./ArrowMap.js";
@@ -138,8 +143,7 @@ function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number): string {
 }
 
 function handleNary(node: XmlNode, ctx: WalkerContext, depth: number): string {
-  const chr =
-    getOmmlPropVal(node, "m:naryPr", "m:chr", "m:val") ?? "\u222B";
+  const chr = getOmmlPropVal(node, "m:naryPr", "m:chr", "m:val") ?? "\u222B";
   const subHide = isOmmlPropOn(node, "m:naryPr", "m:subHide");
   const supHide = isOmmlPropOn(node, "m:naryPr", "m:supHide");
 
@@ -202,15 +206,11 @@ function handleFunc(node: XmlNode, ctx: WalkerContext, depth: number): string {
   return `${funcCmd}{${argLatex}}`;
 }
 
-function handleEqArr(
-  node: XmlNode,
-  ctx: WalkerContext,
-  depth: number,
-): string {
+function handleEqArr(node: XmlNode, ctx: WalkerContext, depth: number): string {
   const rows = getChildren(node, "m:e");
   if (rows.length === 0) return "";
   const rowLatex = rows.map((r) => ommlToLatex(r, ctx, depth + 1));
-  return `\\begin{aligned}\n${rowLatex.join(" \\\\\n")}\n\\end{aligned}`;
+  return `\\begin{aligned}${rowLatex.join(" \\\\")}\\end{aligned}`;
 }
 
 function handleGroupChr(
@@ -220,8 +220,7 @@ function handleGroupChr(
 ): string {
   const chr =
     getOmmlPropVal(node, "m:groupChrPr", "m:chr", "m:val") ?? "\u23DF";
-  const pos =
-    getOmmlPropVal(node, "m:groupChrPr", "m:pos", "m:val") ?? "bot";
+  const pos = getOmmlPropVal(node, "m:groupChrPr", "m:pos", "m:val") ?? "bot";
   const e = getOmmlChildE(node);
   const base = e ? ommlToLatex(e, ctx, depth + 1) : "";
 
@@ -332,7 +331,7 @@ function handleMatrix(
     });
   }
 
-  return `\\begin{matrix}\n${rowsLatex.join(" \\\\\n")}\n\\end{matrix}`;
+  return `\\begin{matrix}${rowsLatex.join(" \\\\")}\\end{matrix}`;
 }
 
 function handleDelimiter(
@@ -340,10 +339,8 @@ function handleDelimiter(
   ctx: WalkerContext,
   depth: number,
 ): string {
-  const begChr =
-    getOmmlPropVal(node, "m:dPr", "m:begChr", "m:val") ?? "(";
-  const endChr =
-    getOmmlPropVal(node, "m:dPr", "m:endChr", "m:val") ?? ")";
+  const begChr = getOmmlPropVal(node, "m:dPr", "m:begChr", "m:val") ?? "(";
+  const endChr = getOmmlPropVal(node, "m:dPr", "m:endChr", "m:val") ?? ")";
 
   const elements = getChildren(node, "m:e");
   const innerParts = elements.map((e) => ommlToLatex(e, ctx, depth + 1));
@@ -354,7 +351,9 @@ function handleDelimiter(
     const matrixContent = getMatrixContent(elements[0]!, ctx, depth);
     const env = getMatrixEnv(begChr, endChr);
     return matrixContent
-      ? matrixContent.replace("\\begin{matrix}", `\\begin{${env}}`).replace("\\end{matrix}", `\\end{${env}}`)
+      ? matrixContent
+          .replace("\\begin{matrix}", `\\begin{${env}}`)
+          .replace("\\end{matrix}", `\\end{${env}}`)
       : innerParts.join(", ");
   }
 
