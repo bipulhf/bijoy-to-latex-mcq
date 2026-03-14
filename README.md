@@ -2,30 +2,23 @@
 
 **Parse Bijoy Bangla MCQ Word documents into structured JSON with embedded LaTeX equations.**
 
-A TypeScript/Node.js library and CLI that reads `.docx` files written in Bijoy encoding (SutonnyMJ font) — including 2- and 3-column option layouts and embedded Word equations — and outputs a clean JSON array of:
+A TypeScript/Node.js tool that reads `.docx` files written in Bijoy encoding (SutonnyMJ font) — including multi-column option layouts and embedded Word equations — and outputs a clean JSON array of questions with raw LaTeX:
 
 ```typescript
 { question: string; options: string[] }[]
 ```
 
-Bangla text is converted to Unicode. All math equations are converted to LaTeX (`$...$` inline or `\[...\]` display) and embedded directly in the question and option strings.
+Bangla text is converted to Unicode. Math equations are converted to raw LaTeX and embedded directly in the question and option strings alongside plain text — ready for rendering with KaTeX or MathJax.
 
 ---
 
 ## Example
 
-**Input `.docx`** (internal Word structure):
+**Input `.docx`** (Bijoy-encoded with Word equations):
 
 ```
-[Paragraph]  "1. A =  g¨vwUª‡·i AbyeÜx (conjugate) g¨vwUª· †KvbwU?"
-             + [Word equation: 3×3 determinant]
-
-[Table, 2 columns]
-┌────────────────┬────────────────┐
-│ (A) 5          │ (B) 10         │
-├────────────────┼────────────────┤
-│ (C) 15         │ (D) 20         │
-└────────────────┴────────────────┘
+৩। [2 3 x; 3 4 -5; 4 1 2] + [-6 8 7; 2 y -9; z 1 2] = [-4 3; 8 8; 0 5] হলে x, y ও z এর মান কত?
+    ক) -4, 8, 2   খ) 6, -8, -2   গ) 2, 5, 8   ঘ) 6, 8, -2
 ```
 
 **Output JSON:**
@@ -33,38 +26,53 @@ Bangla text is converted to Unicode. All math equations are converted to LaTeX (
 ```json
 [
   {
-    "question": "A = ম্যাট্রিক্সের অনুবন্ধী (conjugate) ম্যাট্রিক্স কোনটি?\n\\[\n\\begin{vmatrix}\n4 & 0 & -2 \\\\\n0 & 5 & m \\\\\n-2 & 4 & 5\n\\end{vmatrix}\n\\]",
-    "options": ["5", "10", "15", "20"]
+    "question": "\\begin{bmatrix}2 & 3 & x \\\\3 & 4 & -5 \\\\4 & 1 & 2\\end{bmatrix}+\\begin{bmatrix}-6 & 8 & 7 \\\\2 & y & -9 \\\\z & 1 & 2\\end{bmatrix}=\\begin{bmatrix}-4 & 3 \\\\8 & 8 \\\\0 & 5\\end{bmatrix} হলে x, y ও z এর মান কত? [MSB 2021]",
+    "options": ["-4, 8, 2", "6, -8, -2", "2, 5, 8", "6, 8, -2"]
   }
 ]
 ```
+
+Equations are raw LaTeX (no `$...$` delimiters), suitable for direct use with `katex.render()` or a component that auto-wraps Bangla text in `\text{}`.
 
 ---
 
 ## Features
 
-- **Bijoy → Unicode** — Full 256-entry character map, vowel sign reordering, conjunct consonant handling, NFC normalization
-- **OMML → LaTeX** — Converts all Word equation types via XSLT + recursive MathML walker
-- **Multi-column layouts** — Detects 1-, 2-, 3-, and 4-column option tables automatically
-- **Equations embedded in text** — LaTeX lives inside the `question`/`options` strings, not in a separate structure
-- **Inline vs display mode** — Equations inside text become `$...$`; standalone equation paragraphs become `\[...\]`
+- **Bijoy to Unicode** — Full character map, multi-char sequences, vowel sign reordering, conjunct consonant handling, NFC normalization, cross-run boundary fixes
+- **OMML to LaTeX** — Direct recursive OMML walker that converts all Word equation types to LaTeX
+- **Document-order preservation** — Equations, operators, and text appear in their original positions using ordered XML parsing
+- **Multi-column layouts** — Detects 1-, 2-, 3-, and 4-column option tables, plus inline multi-marker patterns
+- **Unnumbered question support** — Handles both numbered (`1.`, `২।`) and unnumbered content paragraphs
 - **English and variable preservation** — Non-Bijoy runs (Times New Roman, etc.) are left untouched
-- **Conversion statistics** — Warns about skipped OLE equations, unknown characters, or ambiguous layouts
+- **Web UI** — Upload `.docx` files, view rendered output with KaTeX, edit inline, copy to clipboard
+- **Conversion statistics** — Warns about skipped images, equation parse errors, recursion limits
 - **TypeScript-first** — Full types exported, strict mode, ESM
 
 ---
 
-## Installation
+## Quick Start
+
+### Web UI
 
 ```bash
-npm install bijoy-to-latex
+npm install
+npm run start:web
 ```
 
-**Requirements:** Node.js 20+
+Open `http://localhost:3000` — drag and drop a `.docx` file to see structured questions with rendered LaTeX.
 
----
+### CLI
 
-## Quick Start
+```bash
+# Print JSON to stdout
+npx tsx src/cli.ts questions.docx
+
+# Write to file, pretty-printed
+npx tsx src/cli.ts questions.docx -o output.json --pretty
+
+# Show conversion statistics
+npx tsx src/cli.ts questions.docx --stats
+```
 
 ### Node.js / TypeScript
 
@@ -84,24 +92,10 @@ for (const q of result.questions) {
 ```typescript
 import { convertBuffer } from "bijoy-to-latex";
 
-// Express / Multer example
 app.post("/convert", upload.single("file"), async (req, res) => {
   const result = await convertBuffer(req.file.buffer);
   res.json(result.questions);
 });
-```
-
-### CLI
-
-```bash
-# Print JSON to stdout
-npx bijoy-to-latex questions.docx
-
-# Write to file, pretty-printed
-npx bijoy-to-latex questions.docx -o output.json --pretty
-
-# Show conversion statistics
-npx bijoy-to-latex questions.docx --stats
 ```
 
 ---
@@ -110,29 +104,36 @@ npx bijoy-to-latex questions.docx --stats
 
 ```typescript
 interface Question {
-  /** Unicode Bangla text. Equations are embedded as LaTeX:
-   *  - Inline:  $x^2 + 1$
-   *  - Display: \[\begin{vmatrix}...\end{vmatrix}\]
-   */
   question: string;
-
-  /** One entry per option. Same LaTeX embedding rules apply. */
   options: string[];
 }
 
 interface ConversionResult {
   questions: Question[];
-  stats: {
-    totalQuestions: number;
-    totalEquations: number;
-    bijoyRunsConverted: number;
-    tablesProcessed: number;
-    warnings: Array<{
-      type: "unknown_char" | "unsupported_equation" | "ambiguous_option" | "ole_equation";
-      message: string;
-      paragraphIndex: number;
-    }>;
-  };
+  stats: ConversionStats;
+}
+
+interface ConversionStats {
+  totalQuestions: number;
+  totalEquations: number;
+  bijoyRunsConverted: number;
+  tablesProcessed: number;
+  imagesSkipped: number;
+  warnings: ConversionWarning[];
+}
+
+interface ConversionWarning {
+  type:
+    | "unknown_char"
+    | "unsupported_equation"
+    | "ambiguous_option"
+    | "ole_equation"
+    | "image_skipped"
+    | "xslt_fallback"
+    | "equation_parse_error"
+    | "recursion_limit";
+  message: string;
+  paragraphIndex: number;
 }
 ```
 
@@ -144,10 +145,11 @@ MCQ documents in Bangladesh commonly arrange options in tables. All common layou
 
 | Layout | Structure | Detection |
 |---|---|---|
-| Single column | Consecutive paragraphs starting with (A), (B)… | Option marker regex |
-| Two-column table | 2×2 Word table | `isOptionTable()` check |
-| Three-column table | 2×3 Word table | Row-major cell scan |
-| Four-column table | 1×4 Word table (HSC style) | Row-major cell scan |
+| Single column | Consecutive paragraphs starting with ক), খ)... | Option marker regex |
+| Multi-marker inline | Multiple markers in a single paragraph | Multi-strategy parser |
+| Two-column table | 2x2 Word table | `isOptionTable()` check |
+| Three-column table | 2x3 Word table | Row-major cell scan |
+| Four-column table | 1x4 Word table (HSC style) | Row-major cell scan |
 
 Empty cells in sparse tables are skipped. Option markers (`(A)`, `ক.`, `i.`, etc.) are stripped from the option text.
 
@@ -155,21 +157,19 @@ Empty cells in sparse tables are skipped. Option markers (`(A)`, `ক.`, `i.`, e
 
 ## Supported Equation Types
 
-The tool handles every equation type that can appear in Word documents, across two conversion paths: XSLT (primary) and a direct OMML walker (fallback). If both fail, a `[equation]` placeholder is emitted with a warning.
+The tool converts OMML (Office Math Markup Language) directly to LaTeX using a recursive walker that preserves document order.
 
 ### Structure
 
 | Category | Examples |
 |---|---|
-| Fractions | `\frac{a}{b}`, nested, linear `a/b`, skewed `a⁄b`, no-bar `\binom{n}{k}` |
+| Fractions | `\frac{a}{b}`, nested, linear `a/b`, skewed, no-bar `\binom{n}{k}` |
 | All matrix types | `matrix`, `pmatrix`, `bmatrix`, `vmatrix`, `Vmatrix`, `Bmatrix` |
 | Column vectors | `\begin{pmatrix} a \\ b \\ c \end{pmatrix}` |
-| Augmented matrices | `\left[\begin{array}{cc\|c}...\end{array}\right]` |
 | Determinants | `\begin{vmatrix}...\end{vmatrix}` |
 | Roots | `\sqrt{x}`, `\sqrt[n]{x}` |
 | Subscript / Superscript | `a_n`, `x^2`, `x_i^j`, pre-scripts `{}^{14}_{6}C` |
-| Piecewise functions | `\begin{cases}...\end{cases}` |
-| Aligned equations / systems | `\begin{aligned} ... \end{aligned}` |
+| Aligned equations | `\begin{aligned} ... \end{aligned}` |
 | Boxed expressions | `\boxed{x}` |
 | Phantom | `\phantom{x}` |
 
@@ -177,51 +177,38 @@ The tool handles every equation type that can appear in Word documents, across t
 
 | Category | Examples |
 |---|---|
-| Integrals | `\int`, `\iint`, `\iiint`, `\oint`, `\oiint`, definite bounds |
+| Integrals | `\int`, `\iint`, `\iiint`, `\oint`, definite bounds |
 | Summations | `\sum_{i=1}^{n}` with hidden sub/sup variants |
 | Products | `\prod`, `\coprod` |
 | Big operators | `\bigcup`, `\bigcap`, `\bigwedge`, `\bigvee`, `\bigoplus`, `\bigotimes` |
 | Limits | `\lim_{x \to 0}` |
-| Derivatives | `\frac{d}{dx}`, `\frac{\partial f}{\partial x}` |
 
 ### Symbols
 
 | Category | Examples |
 |---|---|
-| Greek letters | Full set α–ω, Α–Ω + variant forms ϵ ϑ ϕ ϱ ς ϰ |
-| Arrows | `\to`, `\Rightarrow`, `\iff`, `\mapsto`, `\hookrightarrow`, `\overleftrightarrow`, 30+ total |
-| Relations | `\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, `\cong`, `\sim`, `\ll`, `\gg`, `\perp`, `\parallel`, `\propto` |
+| Greek letters | Full set alpha-omega, Alpha-Omega + variant forms |
+| Arrows | `\to`, `\Rightarrow`, `\iff`, `\mapsto`, `\hookrightarrow`, 30+ total |
+| Relations | `\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, `\cong`, `\sim`, `\perp`, `\parallel` |
 | Set theory | `\in`, `\notin`, `\subset`, `\cup`, `\cap`, `\setminus`, `\emptyset` |
-| Logic | `\land`, `\lor`, `\lneg`, `\forall`, `\exists`, `\top`, `\bot` |
+| Logic | `\land`, `\lor`, `\lneg`, `\forall`, `\exists` |
 | Dots | `\ldots`, `\cdots`, `\vdots`, `\ddots` |
-| Geometry | `\angle`, `\triangle`, `\square`, `\diamond` |
-| Misc | `\infty`, `\partial`, `\nabla`, `\mid`, `\nmid`, `\lfloor`, `\lceil`, `\langle`, `\rangle` |
 | Blackboard bold | `\mathbb{R}`, `\mathbb{Z}`, `\mathbb{Q}`, `\mathbb{C}`, `\mathbb{N}` |
 
 ### Functions
 
-All standard LaTeX functions: `\sin`, `\cos`, `\tan`, `\sec`, `\csc`, `\cot`, `\sinh`, `\cosh`, `\tanh`, `\arcsin`, `\arccos`, `\arctan`, `\log`, `\ln`, `\exp`, `\det`, `\dim`, `\ker`, `\lim`, `\max`, `\min`, `\sup`, `\inf`, `\gcd`, `\operatorname{lcm}`, `\operatorname{tr}`, `\operatorname{rank}`, `\operatorname{adj}`
+All standard LaTeX functions: `\sin`, `\cos`, `\tan`, `\log`, `\ln`, `\exp`, `\det`, `\lim`, `\max`, `\min`, `\gcd`, and more.
 
 ### Accents & Decorations
 
 | Symbol | LaTeX |
 |---|---|
-| Hat / check / tilde / acute / grave | `\hat`, `\check`, `\tilde`, `\acute`, `\grave` |
+| Hat / check / tilde | `\hat`, `\check`, `\tilde` |
 | Bar / breve / ring | `\bar`, `\breve`, `\mathring` |
 | Dot / double-dot | `\dot`, `\ddot` |
-| Vector | `\vec`, `\overleftarrow`, `\overrightarrow`, `\overleftrightarrow` |
+| Vector | `\vec`, `\overrightarrow` |
 | Over/under braces | `\overbrace`, `\underbrace` |
 | Over/under lines | `\overline`, `\underline` |
-| Cancel | `\cancel`, `\bcancel`, `\xcancel` |
-| Strikethrough notations | All `menclose` notation types |
-
-### Font Styles in Equations
-
-`\mathbf`, `\mathit`, `\boldsymbol`, `\mathbb`, `\mathfrak`, `\mathcal`, `\mathsf`, `\mathtt`, `\mathrm`
-
-### Nuclear / Chemistry Notation
-
-Pre-scripts via `m:sPre` / `mmultiscripts`: `{}^{238}_{92}\mathrm{U}`
 
 ---
 
@@ -247,10 +234,13 @@ Accepts a `Buffer` directly — useful for web servers receiving file uploads.
 
 ```typescript
 interface ConvertOptions {
-  skipBijoy?: boolean;      // Skip Bijoy → Unicode (default: false)
-  skipEquations?: boolean;  // Skip equation → LaTeX (default: false)
-  forceDisplay?: boolean;   // Force all equations to \[...\] mode
-  forceInline?: boolean;    // Force all equations to $...$ mode
+  skipBijoy?: boolean;           // Skip Bijoy to Unicode (default: false)
+  skipEquations?: boolean;       // Skip equation to LaTeX (default: false)
+  forceDisplay?: boolean;        // Force all equations to display mode
+  forceInline?: boolean;         // Force all equations to inline mode
+  preserveFormatting?: boolean;  // Emit **bold** / _italic_ markers
+  imageToken?: string;           // Placeholder for images (default: "[image]")
+  maxRecursionDepth?: number;    // OMML recursion limit (default: 50)
 }
 ```
 
@@ -264,23 +254,25 @@ Usage: bijoy-to-latex [options] <file>
 Convert a Bijoy Bangla Word (.docx) file to structured question JSON.
 
 Arguments:
-  file                     Path to the input .docx file
+  file                        Path to the input .docx file
 
 Options:
-  -o, --output <path>      Write JSON to file (default: stdout)
-  --pretty                 Pretty-print output JSON
-  --skip-bijoy             Skip Bijoy → Unicode conversion
-  --skip-equations         Skip equation → LaTeX conversion
-  --force-display          Force all equations to display mode \[...\]
-  --force-inline           Force all equations to inline mode $...$
-  --stats                  Print conversion stats to stderr
-  -v, --version            Show version
-  -h, --help               Show help
+  -o, --output <path>         Write JSON to file (default: stdout)
+  --pretty                    Pretty-print output JSON
+  --skip-bijoy                Skip Bijoy to Unicode conversion
+  --skip-equations            Skip equation to LaTeX conversion
+  --force-display             Force all equations to display mode
+  --force-inline              Force all equations to inline mode
+  --preserve-formatting       Emit **bold** / _italic_ markers
+  --image-token <token>       Placeholder for images (default: "[image]")
+  --stats                     Print conversion stats to stderr
+  -v, --version               Show version
+  -h, --help                  Show help
 
 Examples:
-  bijoy-to-latex questions.docx
-  bijoy-to-latex questions.docx -o output.json --pretty --stats
-  bijoy-to-latex questions.docx --skip-bijoy
+  npx tsx src/cli.ts questions.docx
+  npx tsx src/cli.ts questions.docx -o output.json --pretty --stats
+  npx tsx src/cli.ts questions.docx --skip-bijoy
 ```
 
 ---
@@ -298,25 +290,36 @@ npm install
 ### Scripts
 
 ```bash
-npm run build        # Compile TypeScript with tsup
-npm run dev          # Run CLI directly with tsx (no compile step)
-npm run test         # Run all tests with Vitest
-npm run test:watch   # Watch mode
-npm run coverage     # Test + coverage report
-npm run lint         # ESLint
-npm run typecheck    # tsc --noEmit
+npm run build          # Compile TypeScript with tsup
+npm run dev            # Run CLI directly with tsx
+npm run start:web      # Start the web UI server on port 3000
+npm run test           # Run all tests with Vitest
+npm run test:watch     # Watch mode
+npm run test:coverage  # Test + coverage report
+npm run typecheck      # tsc --noEmit
+npm run lint           # ESLint
+npm run format         # Prettier
 ```
 
 ### Project Structure
 
 ```
 src/
-├── reader/        .docx unzip + XML parsing
-├── walker/        Document tree walker (paragraphs + tables)
-├── bijoy/         Bijoy detection + Unicode conversion
-├── equations/     OMML extraction, XSLT, MathML → LaTeX
-├── assembler/     Question grouping state machine
-└── assets/        OMML2MML.XSL, bijoy_charmap.json
+├── reader/          .docx unzip + XML parsing (normal + ordered)
+├── walker/          Document tree walker, paragraph parser, table parser
+├── bijoy/           Bijoy detection + Unicode conversion + character map
+├── equations/       OMML extraction, direct walker, LaTeX wrapper, symbol maps
+├── assembler/       Question detection, option detection, assembly state machine
+├── cli.ts           CLI entry point (commander)
+├── server.ts        Express web server for the UI
+├── index.ts         Public API (convertDocx, convertBuffer)
+└── types.ts         All shared TypeScript interfaces
+
+web/
+└── index.html       Single-file web UI with KaTeX rendering
+
+tests/
+└── unit/            Unit tests for all core modules (Vitest)
 ```
 
 ### Running Tests
@@ -324,27 +327,44 @@ src/
 ```bash
 npm test                              # All tests
 npm test -- tests/unit/               # Unit tests only
-npm test -- tests/integration/        # Integration tests only
 npm test -- --coverage                # With coverage report
 ```
 
-### Adding a New Equation Type
+---
 
-1. Add the MathML element handler in [`src/equations/MathmlToLatex.ts`](src/equations/MathmlToLatex.ts)
-2. Add the corresponding unit test in [`tests/unit/MathmlToLatex.test.ts`](tests/unit/MathmlToLatex.test.ts)
-3. Add a fixture `.docx` + expected JSON in [`tests/integration/fixtures/`](tests/integration/fixtures/)
+## Architecture
+
+### Conversion Pipeline
+
+```
+.docx (ZIP)
+  → JSZip extract
+  → fast-xml-parser (normal + preserveOrder)
+  → DocumentWalker (ordered body traversal)
+  → ParagraphParser (runs, equations, images, cross-run Bijoy fixes)
+  → TableParser (option/layout/data classification)
+  → OmmlDirectWalker (OMML → raw LaTeX, document-order)
+  → QuestionAssembler (state machine: IDLE → QUESTION → OPTIONS)
+  → JSON output
+```
+
+### Key Design Decisions
+
+- **Dual XML parse**: The document XML is parsed twice — once normally (for fast child access by tag) and once with `preserveOrder: true` (for correct document order). The ordered parse guides iteration in both the paragraph parser and OMML equation walker.
+- **Cross-run Bijoy fixes**: Bijoy-to-Unicode conversion can break when a single Bangla word is split across multiple `<w:r>` elements. A post-processing step reorders pre-kars and combines vowel signs across run boundaries.
+- **Raw LaTeX output**: Equations are emitted as raw LaTeX without delimiters, allowing the consumer to choose their rendering strategy (e.g., KaTeX `render()` with auto `\text{}` wrapping for Bangla).
 
 ---
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions are welcome.
 
 High-impact areas:
 
 - **Bijoy character map** — edge cases in rare conjunct consonants
-- **MathML → LaTeX coverage** — uncommon equation structures from university papers
-- **Test fixtures** — real HSC/SSC/university question papers (anonymised)
+- **OMML to LaTeX coverage** — uncommon equation structures from university papers
+- **Test fixtures** — real HSC/SSC/university question papers
 - **Performance** — profiling on large (500+ question) documents
 
 When reporting a conversion bug, please include:
@@ -356,16 +376,18 @@ When reporting a conversion bug, please include:
 
 ## Roadmap
 
-- [x] Project design and architecture
-- [ ] Core Bijoy → Unicode engine
-- [ ] OMML → LaTeX pipeline (all equation types)
-- [ ] Multi-column table option detection
-- [ ] Question assembler state machine
-- [ ] `convertDocx` / `convertBuffer` public API
-- [ ] CLI with full options
+- [x] Core Bijoy to Unicode engine
+- [x] OMML to LaTeX pipeline (direct walker, all equation types)
+- [x] Multi-column table option detection
+- [x] Question assembler state machine
+- [x] `convertDocx` / `convertBuffer` public API
+- [x] CLI with full options
+- [x] Web UI with KaTeX rendering, inline editing, localStorage
+- [x] Document-order preservation (equations + operators)
+- [x] Cross-run Bijoy conversion fixes
 - [ ] npm publish (`bijoy-to-latex`)
 - [ ] GitHub Actions CI
-- [ ] MkDocs documentation site
+- [ ] Integration test fixtures
 
 ---
 
@@ -377,6 +399,5 @@ When reporting a conversion bug, please include:
 
 ## Acknowledgements
 
-- Microsoft's `OMML2MML.XSL` stylesheet for OMML → MathML transformation
 - The Bangla computing community for documenting Bijoy encoding mappings
 - Teachers and developers digitizing Bangla educational content across Bangladesh
