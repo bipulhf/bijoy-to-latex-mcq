@@ -1,16 +1,15 @@
 import type { XmlNode, ConversionWarning } from "../types.js";
 import {
+  getChild,
   getChildren,
   getTextContent,
+  getAttr,
   getAllChildTags,
   oGetChildSequence,
   oGetChildByRef,
   type OrderedEntry,
 } from "../reader/XmlParser.js";
-import {
-  getOmmlPropVal,
-  isOmmlPropOn,
-} from "./OmmlExtractor.js";
+import { getOmmlPropVal, isOmmlPropOn } from "./OmmlExtractor.js";
 import {
   NARY_MAP,
   ACCENT_MAP,
@@ -149,7 +148,12 @@ function recurseChild(
   return ommlToLatex(child, ctx, depth + 1, childOrdered);
 }
 
-function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleFrac(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const fracType = getOmmlPropVal(node, "m:fPr", "m:type", "m:val");
   const numLatex = recurseChild(node, "m:num", ctx, depth, ordered);
   const denLatex = recurseChild(node, "m:den", ctx, depth, ordered);
@@ -166,7 +170,12 @@ function handleFrac(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: 
   }
 }
 
-function handleNary(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleNary(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const chr = getOmmlPropVal(node, "m:naryPr", "m:chr", "m:val") ?? "\u222B";
   const subHide = isOmmlPropOn(node, "m:naryPr", "m:subHide");
   const supHide = isOmmlPropOn(node, "m:naryPr", "m:supHide");
@@ -187,7 +196,12 @@ function handleNary(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: 
   return result;
 }
 
-function handleRad(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleRad(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const degHide = isOmmlPropOn(node, "m:radPr", "m:degHide");
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
 
@@ -197,20 +211,35 @@ function handleRad(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: O
   return `\\sqrt[${degLatex}]{${base}}`;
 }
 
-function handleAcc(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleAcc(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const chr = getOmmlPropVal(node, "m:accPr", "m:chr", "m:val") ?? "\u0302";
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
   const cmd = ACCENT_MAP[chr] ?? "\\hat";
   return `${cmd}{${base}}`;
 }
 
-function handleBar(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleBar(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const pos = getOmmlPropVal(node, "m:barPr", "m:pos", "m:val") ?? "top";
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
   return pos === "bot" ? `\\underline{${base}}` : `\\overline{${base}}`;
 }
 
-function handleFunc(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleFunc(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const nameLatex = recurseChild(node, "m:fName", ctx, depth, ordered);
   const argLatex = recurseChild(node, "m:e", ctx, depth, ordered);
   const knownFunc = OPERATOR_MAP[nameLatex.trim()];
@@ -218,10 +247,17 @@ function handleFunc(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: 
   return `${funcCmd}{${argLatex}}`;
 }
 
-function handleEqArr(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleEqArr(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const rows = getChildren(node, "m:e");
   if (rows.length === 0) return "";
-  const rowLatex = rows.map((_, i) => recurseChild(node, "m:e", ctx, depth, ordered, i));
+  const rowLatex = rows.map((_, i) =>
+    recurseChild(node, "m:e", ctx, depth, ordered, i),
+  );
   return `\\begin{aligned}${rowLatex.join(" \\\\")}\\end{aligned}`;
 }
 
@@ -272,7 +308,12 @@ function handleLimUpp(
   return `\\overset{${limLatex}}{${base}}`;
 }
 
-function handleSPre(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleSPre(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
   const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
   const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
@@ -282,13 +323,23 @@ function handleSPre(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: 
   return `${pre}${base}`;
 }
 
-function handleSSub(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleSSub(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
   const subLatex = recurseChild(node, "m:sub", ctx, depth, ordered);
   return `${base}_{${subLatex}}`;
 }
 
-function handleSSup(node: XmlNode, ctx: WalkerContext, depth: number, ordered?: OrderedEntry[]): string {
+function handleSSup(
+  node: XmlNode,
+  ctx: WalkerContext,
+  depth: number,
+  ordered?: OrderedEntry[],
+): string {
   const base = recurseChild(node, "m:e", ctx, depth, ordered);
   const supLatex = recurseChild(node, "m:sup", ctx, depth, ordered);
   return `${base}^{${supLatex}}`;
@@ -359,9 +410,7 @@ function handleDelimiter(
   const hasMatrix = elements.length === 1 && containsMatrix(elements[0]!);
 
   if (hasMatrix) {
-    const eOrdered = ordered
-      ? oGetChildByRef(ordered, "m:e", 0)
-      : undefined;
+    const eOrdered = ordered ? oGetChildByRef(ordered, "m:e", 0) : undefined;
     const matrixContent = getMatrixContent(elements[0]!, ctx, depth, eOrdered);
     const env = getMatrixEnv(begChr, endChr);
     return matrixContent
@@ -478,9 +527,7 @@ function getMatrixContent(
 ): string | null {
   const matrices = getChildren(node, "m:m");
   if (matrices.length > 0 && matrices[0]) {
-    const mOrdered = ordered
-      ? oGetChildByRef(ordered, "m:m", 0)
-      : undefined;
+    const mOrdered = ordered ? oGetChildByRef(ordered, "m:m", 0) : undefined;
     return handleMatrix(matrices[0], ctx, depth + 1, mOrdered);
   }
   for (const tag of getAllChildTags(node)) {
@@ -505,7 +552,29 @@ function getMatrixEnv(begChr: string, endChr: string): string {
   return "pmatrix";
 }
 
+const SYMBOL_FONT_MAP: Record<string, string> = {
+  F0AE: "\u2192", // → rightwards arrow
+  F0AC: "\u2190", // ← leftwards arrow
+  F0AD: "\u2191", // ↑ upwards arrow
+  F0AF: "\u2193", // ↓ downwards arrow
+  F0AB: "\u2194", // ↔ left right arrow
+  F0DE: "\u21D2", // ⇒ rightwards double arrow
+  F0DC: "\u21D0", // ⇐ leftwards double arrow
+  F0DB: "\u21D4", // ⇔ left right double arrow
+};
+
 function getOmmlRunText(node: XmlNode): string {
   const tNodes = getChildren(node, "m:t");
-  return tNodes.map((t) => getTextContent(t)).join("");
+  let text = tNodes.map((t) => getTextContent(t)).join("");
+
+  const sym = getChild(node, "w:sym");
+  if (sym) {
+    const charCode = getAttr(sym, "w:char");
+    if (charCode) {
+      const unicode = SYMBOL_FONT_MAP[charCode.toUpperCase()];
+      if (unicode) text += unicode;
+    }
+  }
+
+  return text;
 }
