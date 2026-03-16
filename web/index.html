@@ -1,677 +1,1242 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="bn">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bijoy to LaTeX Converter</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bijoy to LaTeX Converter</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+    ></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-    :root {
-      --bg: #f4f5f7;
-      --surface: #ffffff;
-      --surface-raised: #fafbfc;
-      --border: #e0e3e8;
-      --border-light: #eef0f3;
-      --text: #111827;
-      --text-secondary: #6b7280;
-      --text-muted: #9ca3af;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --accent-light: #eef2ff;
-      --accent-subtle: #f5f3ff;
-      --success: #059669;
-      --success-light: #ecfdf5;
-      --danger: #dc2626;
-      --danger-light: #fef2f2;
-      --radius: 12px;
-      --radius-sm: 8px;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
-      --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
+      :root {
+        --bg: #f4f5f7;
+        --surface: #ffffff;
+        --surface-raised: #fafbfc;
+        --border: #e0e3e8;
+        --border-light: #eef0f3;
+        --text: #111827;
+        --text-secondary: #6b7280;
+        --text-muted: #9ca3af;
+        --accent: #4f46e5;
+        --accent-hover: #4338ca;
+        --accent-light: #eef2ff;
+        --accent-subtle: #f5f3ff;
+        --success: #059669;
+        --success-light: #ecfdf5;
+        --danger: #dc2626;
+        --danger-light: #fef2f2;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md:
+          0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+        --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.6;
-    }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.6;
+      }
 
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(8px);
-      background: rgba(255,255,255,0.92);
-    }
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.92);
+      }
 
-    .header-inner {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+      .header-inner {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
 
-    .brand { display: flex; align-items: center; gap: 10px; }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
 
-    .brand-icon {
-      width: 32px; height: 32px;
-      background: var(--accent); border-radius: 8px;
-      display: flex; align-items: center; justify-content: center; color: white;
-    }
+      .brand-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
 
-    .brand-icon svg { width: 18px; height: 18px; }
+      .brand-icon svg {
+        width: 18px;
+        height: 18px;
+      }
 
-    header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.025em; }
+      header h1 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
 
-    .header-right { display: flex; align-items: center; gap: 10px; }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
 
-    .header-file {
-      font-size: 0.8rem; color: var(--text-muted);
-      display: none; align-items: center; gap: 6px;
-    }
-    .header-file.visible { display: flex; }
-    .header-file svg { width: 14px; height: 14px; }
+      .header-file {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        display: none;
+        align-items: center;
+        gap: 6px;
+      }
+      .header-file.visible {
+        display: flex;
+      }
+      .header-file svg {
+        width: 14px;
+        height: 14px;
+      }
 
-    .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
-    main { padding: 28px 0 80px; }
+      .container {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      main {
+        padding: 28px 0 80px;
+      }
 
-    .dropzone {
-      border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 56px 24px; text-align: center; cursor: pointer;
-      transition: all var(--transition); background: var(--surface);
-    }
-    .dropzone:hover { border-color: var(--accent); background: var(--accent-subtle); }
-    .dropzone.drag-over { border-color: var(--accent); background: var(--accent-light); transform: scale(1.005); }
-    .dropzone.has-file { padding: 28px 24px; border-style: solid; border-color: var(--border-light); }
-    .dropzone-icon { width: 52px; height: 52px; margin: 0 auto 18px; color: var(--text-muted); transition: color var(--transition); }
-    .dropzone:hover .dropzone-icon { color: var(--accent); }
-    .dropzone h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
-    .dropzone .subtitle { font-size: 0.82rem; color: var(--text-muted); }
-    .dropzone .file-hint { display: inline-block; margin-top: 14px; font-size: 0.75rem; color: var(--text-muted); background: var(--bg); padding: 4px 12px; border-radius: 20px; }
-    .dropzone input { display: none; }
+      .dropzone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 56px 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition);
+        background: var(--surface);
+      }
+      .dropzone:hover {
+        border-color: var(--accent);
+        background: var(--accent-subtle);
+      }
+      .dropzone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        transform: scale(1.005);
+      }
+      .dropzone.has-file {
+        padding: 28px 24px;
+        border-style: solid;
+        border-color: var(--border-light);
+      }
+      .dropzone-icon {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 18px;
+        color: var(--text-muted);
+        transition: color var(--transition);
+      }
+      .dropzone:hover .dropzone-icon {
+        color: var(--accent);
+      }
+      .dropzone h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .dropzone .subtitle {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+      }
+      .dropzone .file-hint {
+        display: inline-block;
+        margin-top: 14px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        background: var(--bg);
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+      .dropzone input {
+        display: none;
+      }
 
-    .status {
-      margin-top: 20px; display: none; align-items: center; gap: 10px;
-      font-size: 0.85rem; color: var(--text-secondary);
-      padding: 10px 16px; border-radius: var(--radius-sm);
-      background: var(--surface); border: 1px solid var(--border-light);
-    }
-    .status.visible { display: flex; }
-    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .status.error { color: var(--danger); background: var(--danger-light); border-color: transparent; }
-    .status.done { color: var(--success); background: var(--success-light); border-color: transparent; }
-
-    .stats-row { display: none; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
-    .stats-row.visible { display: flex; }
-    .stat-chip { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-light); border-radius: 20px; padding: 6px 14px; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); box-shadow: var(--shadow-sm); }
-    .stat-chip strong { font-weight: 700; color: var(--accent); }
-
-    .toolbar { display: none; justify-content: space-between; align-items: center; margin-top: 24px; }
-    .toolbar.visible { display: flex; }
-    .toolbar-label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      border: none; border-radius: var(--radius-sm); padding: 7px 14px;
-      font-size: 0.78rem; font-weight: 500; cursor: pointer;
-      transition: all var(--transition); font-family: inherit; white-space: nowrap;
-    }
-    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
-    .btn-accent { background: var(--accent); color: white; }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-danger-ghost { background: transparent; color: var(--text-muted); border: 1px solid transparent; }
-    .btn-danger-ghost:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
-    .btn.copied { background: var(--success-light) !important; border-color: var(--success) !important; color: var(--success) !important; }
-
-    .icon-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 28px; height: 28px; border-radius: 6px; border: none;
-      background: transparent; cursor: pointer; transition: all var(--transition);
-      flex-shrink: 0; padding: 0; color: var(--text-muted);
-    }
-    .icon-btn svg { width: 14px; height: 14px; }
-    .icon-btn:hover { background: var(--accent-light); color: var(--accent); }
-    .icon-btn.copied { color: var(--success); background: var(--success-light); }
-    .icon-btn-danger:hover { background: var(--danger-light); color: var(--danger); }
-
-    .results { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-
-    .question-card {
-      background: var(--surface); border: 1px solid var(--border-light);
-      border-radius: var(--radius); box-shadow: var(--shadow-sm);
-      transition: box-shadow var(--transition);
-      animation: fadeSlideIn 0.25s ease-out both;
-    }
-    .question-card:hover { box-shadow: var(--shadow-md); }
-
-    .card-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px; border-bottom: 1px solid var(--border-light);
-    }
-    .card-header-left { display: flex; align-items: center; gap: 8px; }
-    .card-number { font-size: 0.72rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; background: var(--accent-light); padding: 3px 10px; border-radius: 20px; }
-    .card-header-actions { display: flex; align-items: center; gap: 2px; }
-
-    .card-body { padding: 16px; }
-
-    .question-row { display: flex; align-items: flex-start; gap: 8px; }
-    .question-text {
-      font-size: 0.95rem; line-height: 1.75; flex: 1; min-width: 0;
-      overflow: visible; word-wrap: break-word; cursor: pointer; padding: 2px 4px;
-      border-radius: 4px; transition: background var(--transition);
-    }
-    .question-text:hover { background: var(--accent-subtle); }
-
-    .edit-area {
-      width: 100%; font-family: 'Inter', monospace; font-size: 0.9rem;
-      line-height: 1.6; padding: 8px 10px; border: 1.5px solid var(--accent);
-      border-radius: var(--radius-sm); background: var(--surface);
-      resize: vertical; min-height: 40px; outline: none;
-      transition: border-color var(--transition);
-    }
-    .edit-area:focus { border-color: var(--accent-hover); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
-
-    .options-grid {
-      list-style: none;
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-      gap: 6px; margin-top: 14px;
-    }
-
-    .option-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 10px; background: var(--bg);
-      border-radius: var(--radius-sm); border: 1px solid transparent;
-      transition: all var(--transition);
-    }
-    .option-item:hover { border-color: var(--border); background: var(--surface-raised); }
-
-    .option-marker {
-      font-size: 0.78rem; font-weight: 700; color: white;
-      background: var(--accent); width: 24px; height: 24px;
-      border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0;
-    }
-
-    .option-content {
-      flex: 1; min-width: 0; font-size: 0.9rem; line-height: 1.6;
-      overflow: visible; word-wrap: break-word; cursor: pointer; padding: 2px 4px;
-      border-radius: 4px; transition: background var(--transition);
-    }
-    .option-content:hover { background: var(--accent-subtle); }
-
-    .option-actions { display: flex; gap: 2px; flex-shrink: 0; }
-
-    .add-option-btn {
-      display: flex; align-items: center; gap: 6px;
-      margin-top: 8px; padding: 6px 12px;
-      background: transparent; border: 1px dashed var(--border);
-      border-radius: var(--radius-sm); color: var(--text-muted);
-      font-size: 0.8rem; font-weight: 500; cursor: pointer;
-      font-family: inherit; transition: all var(--transition);
-    }
-    .add-option-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-    .add-option-btn svg { width: 14px; height: 14px; }
-
-    .saved-badge {
-      font-size: 0.7rem; color: var(--success); background: var(--success-light);
-      padding: 3px 10px; border-radius: 20px; font-weight: 600;
-      display: none; align-items: center; gap: 4px;
-    }
-    .saved-badge.visible { display: inline-flex; }
-    .saved-badge svg { width: 12px; height: 12px; }
-
-    .clear-storage-btn {
-      font-size: 0.75rem; color: var(--text-muted); background: none;
-      border: none; cursor: pointer; text-decoration: underline;
-      font-family: inherit; padding: 2px 4px;
-    }
-    .clear-storage-btn:hover { color: var(--danger); }
-
-    .katex-display { margin: 0.4em 0 !important; }
-    .katex { font-size: 1.05em !important; }
-
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeOut {
-      to { opacity: 0; transform: scale(0.96); height: 0; padding: 0; margin: 0; overflow: hidden; }
-    }
-
-    .removing { animation: fadeOut 0.25s ease-out forwards; }
-
-    @media (max-width: 640px) {
-      .container { padding: 0 16px; }
-      .dropzone { padding: 40px 16px; }
-      .options-grid { grid-template-columns: 1fr; }
-      .header-file { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <h1>Bijoy to LaTeX</h1>
-      </div>
-      <div class="header-right">
-        <span class="saved-badge" id="savedBadge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Saved
-        </span>
-        <div class="header-file" id="headerFile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span id="fileName"></span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <div class="container">
-      <div class="dropzone" id="dropzone">
-        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <h2>Upload your .docx file</h2>
-        <p class="subtitle">Drag and drop or click to browse</p>
-        <span class="file-hint">Bijoy-encoded Word documents supported</span>
-        <input type="file" id="fileInput" accept=".docx" />
-      </div>
-
-      <div class="status" id="status">
-        <div class="spinner" id="spinner"></div>
-        <span id="statusText">Processing...</span>
-      </div>
-
-      <div class="stats-row" id="stats"></div>
-
-      <div class="toolbar" id="toolbar">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="toolbar-label" id="toolbarLabel"></span>
-          <button class="clear-storage-btn" id="clearStorageBtn" title="Clear saved data">clear saved</button>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost" id="copyAllTextBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Copy All Text
-          </button>
-          <button class="btn btn-accent" id="copyAllJsonBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Copy All JSON
-          </button>
-        </div>
-      </div>
-
-      <div class="results" id="results"></div>
-    </div>
-  </main>
-
-  <script>
-    const MARKERS = ["\u0995", "\u0996", "\u0997", "\u0998", "\u0999", "\u099A", "\u099B", "\u099C"];
-    const COPY_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-    const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-    const TRASH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-    const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-    const STORAGE_KEY = "bijoy-to-latex-data";
-
-    const $ = (id) => document.getElementById(id);
-    const dropzone = $("dropzone");
-    const fileInput = $("fileInput");
-    const statusEl = $("status");
-    const spinner = $("spinner");
-    const statusText = $("statusText");
-    const statsEl = $("stats");
-    const toolbar = $("toolbar");
-    const toolbarLabel = $("toolbarLabel");
-    const copyAllTextBtn = $("copyAllTextBtn");
-    const copyAllJsonBtn = $("copyAllJsonBtn");
-    const clearStorageBtn = $("clearStorageBtn");
-    const resultsEl = $("results");
-    const headerFile = $("headerFile");
-    const fileNameEl = $("fileName");
-    const savedBadge = $("savedBadge");
-
-    let questions = [];
-
-    // --- localStorage ---
-    function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
-      flashSaved();
-    }
-
-    function loadFromStorage() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return false;
-        const data = JSON.parse(raw);
-        if (Array.isArray(data) && data.length > 0) {
-          questions = data;
-          return true;
+      .status {
+        margin-top: 20px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+      }
+      .status.visible {
+        display: flex;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
-      } catch {}
-      return false;
-    }
+      }
+      .status.error {
+        color: var(--danger);
+        background: var(--danger-light);
+        border-color: transparent;
+      }
+      .status.done {
+        color: var(--success);
+        background: var(--success-light);
+        border-color: transparent;
+      }
 
-    let savedTimer;
-    function flashSaved() {
-      savedBadge.classList.add("visible");
-      clearTimeout(savedTimer);
-      savedTimer = setTimeout(() => savedBadge.classList.remove("visible"), 1500);
-    }
+      .stats-row {
+        display: none;
+        gap: 8px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .stats-row.visible {
+        display: flex;
+      }
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        box-shadow: var(--shadow-sm);
+      }
+      .stat-chip strong {
+        font-weight: 700;
+        color: var(--accent);
+      }
 
-    clearStorageBtn.addEventListener("click", () => {
-      if (!confirm("Clear all saved data?")) return;
-      localStorage.removeItem(STORAGE_KEY);
-      questions = [];
-      resultsEl.innerHTML = "";
-      toolbar.classList.remove("visible");
-      statsEl.classList.remove("visible");
-      statusEl.className = "status";
-    });
+      .toolbar {
+        display: none;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+      }
+      .toolbar.visible {
+        display: flex;
+      }
+      .toolbar-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
 
-    // --- Dropzone ---
-    dropzone.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
-    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
-    dropzone.addEventListener("drop", (e) => { e.preventDefault(); dropzone.classList.remove("drag-over"); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 7px 14px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: var(--accent-light);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-accent:hover {
+        background: var(--accent-hover);
+      }
+      .btn-danger-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid transparent;
+      }
+      .btn-danger-ghost:hover {
+        background: var(--danger-light);
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .btn.copied {
+        background: var(--success-light) !important;
+        border-color: var(--success) !important;
+        color: var(--success) !important;
+      }
 
-    // --- Copy All ---
-    copyAllJsonBtn.addEventListener("click", () => {
-      if (!questions.length) return;
-      copyToClipboard(JSON.stringify(questions, null, 2), copyAllJsonBtn);
-    });
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all var(--transition);
+        flex-shrink: 0;
+        padding: 0;
+        color: var(--text-muted);
+      }
+      .icon-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .icon-btn:hover {
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .icon-btn.copied {
+        color: var(--success);
+        background: var(--success-light);
+      }
+      .icon-btn-danger:hover {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
 
-    copyAllTextBtn.addEventListener("click", () => {
-      if (!questions.length) return;
-      const allText = questions.map((q, i) => {
-        let s = `${i + 1}. ${q.question}`;
-        if (q.options.length) s += "\n" + q.options.map((o, oi) => `   ${markerAt(oi)}) ${o}`).join("\n");
-        return s;
-      }).join("\n\n");
-      copyToClipboard(allText, copyAllTextBtn);
-    });
+      .results {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
 
-    function markerAt(i) { return MARKERS[i] || String.fromCharCode(0x0995 + i); }
+      .question-card {
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--transition);
+        animation: fadeSlideIn 0.25s ease-out both;
+      }
+      .question-card:hover {
+        box-shadow: var(--shadow-md);
+      }
 
-    // --- File handling ---
-    async function handleFile(file) {
-      if (!file.name.endsWith(".docx")) { showError("Please upload a .docx file"); return; }
-      fileNameEl.textContent = file.name;
-      headerFile.classList.add("visible");
-      dropzone.classList.add("has-file");
-      showStatus("Converting " + file.name + "...");
-      resultsEl.innerHTML = "";
-      statsEl.innerHTML = "";
-      statsEl.classList.remove("visible");
-      toolbar.classList.remove("visible");
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border-light);
+      }
+      .card-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-number {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--accent-light);
+        padding: 3px 10px;
+        border-radius: 20px;
+      }
+      .card-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
 
-      const form = new FormData();
-      form.append("file", file);
-      try {
-        const res = await fetch("/api/convert", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Conversion failed");
-        questions = data.questions;
-        save();
-        showDone(`${questions.length} questions extracted successfully`);
-        renderStats(data.stats);
-        renderAll();
-      } catch (err) { showError(err.message); }
-    }
+      .card-body {
+        padding: 16px;
+      }
 
-    function showStatus(msg) { statusEl.className = "status visible"; spinner.style.display = "block"; statusText.textContent = msg; }
-    function showDone(msg) { statusEl.className = "status visible done"; spinner.style.display = "none"; statusText.textContent = msg; }
-    function showError(msg) { statusEl.className = "status visible error"; spinner.style.display = "none"; statusText.textContent = msg; }
+      .question-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .question-text {
+        font-size: 0.95rem;
+        line-height: 1.75;
+        flex: 1;
+        min-width: 0;
+        overflow: visible;
+        word-wrap: break-word;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: background var(--transition);
+      }
+      .question-text:hover {
+        background: var(--accent-subtle);
+      }
 
-    function renderStats(stats) {
-      const items = [["Questions", stats.totalQuestions], ["Equations", stats.totalEquations], ["Bijoy Runs", stats.bijoyRunsConverted], ["Tables", stats.tablesProcessed]];
-      statsEl.innerHTML = items.filter(([, v]) => v > 0).map(([l, v]) => `<div class="stat-chip">${l} <strong>${v}</strong></div>`).join("");
-      statsEl.classList.add("visible");
-    }
+      .edit-area {
+        width: 100%;
+        font-family: "Inter", monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        padding: 8px 10px;
+        border: 1.5px solid var(--accent);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        resize: vertical;
+        min-height: 40px;
+        outline: none;
+        transition: border-color var(--transition);
+      }
+      .edit-area:focus {
+        border-color: var(--accent-hover);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+      }
 
-    // --- Rendering ---
-    function renderAll() {
-      toolbarLabel.textContent = `${questions.length} questions`;
-      toolbar.classList.add("visible");
-      resultsEl.innerHTML = "";
-      questions.forEach((_, i) => resultsEl.appendChild(buildCard(i)));
-    }
+      .options-grid {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+        gap: 6px;
+        margin-top: 14px;
+      }
 
-    function rebuildCard(qi) {
-      const old = resultsEl.children[qi];
-      if (!old) return;
-      const card = buildCard(qi);
-      resultsEl.replaceChild(card, old);
-      toolbarLabel.textContent = `${questions.length} questions`;
-    }
+      .option-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: var(--bg);
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        transition: all var(--transition);
+      }
+      .option-item:hover {
+        border-color: var(--border);
+        background: var(--surface-raised);
+      }
 
-    function buildCard(qi) {
-      const q = questions[qi];
-      const card = document.createElement("div");
-      card.className = "question-card";
-      card.style.animationDelay = `${Math.min(qi * 30, 300)}ms`;
+      .option-marker {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: white;
+        background: var(--accent);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
 
-      const header = document.createElement("div");
-      header.className = "card-header";
+      .option-content {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        overflow: visible;
+        word-wrap: break-word;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: background var(--transition);
+      }
+      .option-content:hover {
+        background: var(--accent-subtle);
+      }
 
-      const headerLeft = document.createElement("div");
-      headerLeft.className = "card-header-left";
-      const num = document.createElement("span");
-      num.className = "card-number";
-      num.textContent = `Q${qi + 1}`;
-      headerLeft.appendChild(num);
+      .option-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+      }
 
-      const actions = document.createElement("div");
-      actions.className = "card-header-actions";
-      actions.appendChild(makeIconBtn(COPY_SVG, "Copy question", () => q.question, false));
-      if (q.options.length) actions.appendChild(makeIconBtn(COPY_SVG, "Copy all", () => buildCopyText(q), false));
-      const delQBtn = makeIconBtn(TRASH_SVG, "Delete question", null, true);
-      delQBtn.classList.add("icon-btn-danger");
-      delQBtn.addEventListener("click", () => deleteQuestion(qi));
-      actions.appendChild(delQBtn);
+      .add-option-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: transparent;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all var(--transition);
+      }
+      .add-option-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-subtle);
+      }
+      .add-option-btn svg {
+        width: 14px;
+        height: 14px;
+      }
 
-      header.appendChild(headerLeft);
-      header.appendChild(actions);
+      .saved-badge {
+        font-size: 0.7rem;
+        color: var(--success);
+        background: var(--success-light);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: none;
+        align-items: center;
+        gap: 4px;
+      }
+      .saved-badge.visible {
+        display: inline-flex;
+      }
+      .saved-badge svg {
+        width: 12px;
+        height: 12px;
+      }
 
-      const body = document.createElement("div");
-      body.className = "card-body";
+      .clear-storage-btn {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: underline;
+        font-family: inherit;
+        padding: 2px 4px;
+      }
+      .clear-storage-btn:hover {
+        color: var(--danger);
+      }
 
-      const qRow = document.createElement("div");
-      qRow.className = "question-row";
-      const qText = document.createElement("div");
-      qText.className = "question-text";
-      renderMath(qText, q.question);
-      qText.addEventListener("click", () => startEdit(qText, q.question, (val) => {
-        questions[qi].question = val;
-        save();
-        rebuildCard(qi);
-      }));
-      qRow.appendChild(qText);
-      body.appendChild(qRow);
+      .katex-display {
+        margin: 0.4em 0 !important;
+      }
+      .katex {
+        font-size: 1.05em !important;
+      }
 
-      const list = document.createElement("ul");
-      list.className = "options-grid";
-      q.options.forEach((opt, oi) => list.appendChild(buildOptionItem(qi, oi)));
-      body.appendChild(list);
-
-      const addBtn = document.createElement("button");
-      addBtn.className = "add-option-btn";
-      addBtn.innerHTML = PLUS_SVG + " Add option";
-      addBtn.addEventListener("click", () => {
-        questions[qi].options.push("");
-        save();
-        rebuildCard(qi);
-        const newList = resultsEl.children[qi].querySelector(".options-grid");
-        const lastOpt = newList.lastElementChild;
-        if (lastOpt) {
-          const contentEl = lastOpt.querySelector(".option-content");
-          if (contentEl) contentEl.click();
+      @keyframes fadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
         }
-      });
-      body.appendChild(addBtn);
-
-      card.appendChild(header);
-      card.appendChild(body);
-      return card;
-    }
-
-    function buildOptionItem(qi, oi) {
-      const opt = questions[qi].options[oi];
-      const li = document.createElement("li");
-      li.className = "option-item";
-
-      const marker = document.createElement("span");
-      marker.className = "option-marker";
-      marker.textContent = markerAt(oi);
-
-      const content = document.createElement("span");
-      content.className = "option-content";
-      renderMath(content, opt);
-      content.addEventListener("click", () => startEdit(content, opt, (val) => {
-        questions[qi].options[oi] = val;
-        save();
-        rebuildCard(qi);
-      }));
-
-      const optActions = document.createElement("span");
-      optActions.className = "option-actions";
-      optActions.appendChild(makeIconBtn(COPY_SVG, "Copy", () => opt, false));
-      const delOptBtn = makeIconBtn(TRASH_SVG, "Delete option", null, true);
-      delOptBtn.classList.add("icon-btn-danger");
-      delOptBtn.addEventListener("click", () => deleteOption(qi, oi));
-      optActions.appendChild(delOptBtn);
-
-      li.appendChild(marker);
-      li.appendChild(content);
-      li.appendChild(optActions);
-      return li;
-    }
-
-    // --- Editing ---
-    function startEdit(el, currentValue, onSave) {
-      if (el.querySelector("textarea")) return;
-      const rect = el.getBoundingClientRect();
-      const ta = document.createElement("textarea");
-      ta.className = "edit-area";
-      ta.value = currentValue;
-      ta.style.minHeight = Math.max(40, rect.height) + "px";
-      el.textContent = "";
-      el.style.padding = "0";
-      el.style.cursor = "default";
-      el.replaceChildren(ta);
-      ta.focus();
-      ta.setSelectionRange(ta.value.length, ta.value.length);
-
-      function finish() {
-        const val = ta.value;
-        if (val !== currentValue) onSave(val);
-        else {
-          el.textContent = "";
-          el.style.padding = "";
-          el.style.cursor = "";
-          renderMath(el, currentValue);
-          el.addEventListener("click", () => startEdit(el, currentValue, onSave), { once: true });
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 
-      ta.addEventListener("blur", finish);
-      ta.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") { ta.value = currentValue; ta.blur(); }
-        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+          transform: scale(0.96);
+          height: 0;
+          padding: 0;
+          margin: 0;
+          overflow: hidden;
+        }
+      }
+
+      .removing {
+        animation: fadeOut 0.25s ease-out forwards;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding: 0 16px;
+        }
+        .dropzone {
+          padding: 40px 16px;
+        }
+        .options-grid {
+          grid-template-columns: 1fr;
+        }
+        .header-file {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          </div>
+          <h1>Bijoy to LaTeX</h1>
+        </div>
+        <div class="header-right">
+          <span class="saved-badge" id="savedBadge">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Saved
+          </span>
+          <div class="header-file" id="headerFile">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span id="fileName"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <div class="dropzone" id="dropzone">
+          <svg
+            class="dropzone-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <h2>Upload your .docx file</h2>
+          <p class="subtitle">Drag and drop or click to browse</p>
+          <span class="file-hint">Bijoy-encoded Word documents supported</span>
+          <input type="file" id="fileInput" accept=".docx" />
+        </div>
+
+        <div class="status" id="status">
+          <div class="spinner" id="spinner"></div>
+          <span id="statusText">Processing...</span>
+        </div>
+
+        <div class="stats-row" id="stats"></div>
+
+        <div class="toolbar" id="toolbar">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span class="toolbar-label" id="toolbarLabel"></span>
+            <button
+              class="clear-storage-btn"
+              id="clearStorageBtn"
+              title="Clear saved data"
+            >
+              clear saved
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button class="btn btn-ghost" id="copyAllTextBtn">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                />
+              </svg>
+              Copy All Text
+            </button>
+            <button class="btn btn-accent" id="copyAllJsonBtn">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                />
+              </svg>
+              Copy All JSON
+            </button>
+          </div>
+        </div>
+
+        <div class="results" id="results"></div>
+      </div>
+    </main>
+
+    <script>
+      const MARKERS = [
+        "\u0995",
+        "\u0996",
+        "\u0997",
+        "\u0998",
+        "\u0999",
+        "\u099A",
+        "\u099B",
+        "\u099C",
+      ];
+      const COPY_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+      const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const TRASH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+      const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+      const STORAGE_KEY = "bijoy-to-latex-data";
+
+      const $ = (id) => document.getElementById(id);
+      const dropzone = $("dropzone");
+      const fileInput = $("fileInput");
+      const statusEl = $("status");
+      const spinner = $("spinner");
+      const statusText = $("statusText");
+      const statsEl = $("stats");
+      const toolbar = $("toolbar");
+      const toolbarLabel = $("toolbarLabel");
+      const copyAllTextBtn = $("copyAllTextBtn");
+      const copyAllJsonBtn = $("copyAllJsonBtn");
+      const clearStorageBtn = $("clearStorageBtn");
+      const resultsEl = $("results");
+      const headerFile = $("headerFile");
+      const fileNameEl = $("fileName");
+      const savedBadge = $("savedBadge");
+
+      let questions = [];
+
+      // --- localStorage ---
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
+        flashSaved();
+      }
+
+      function loadFromStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+          if (Array.isArray(data) && data.length > 0) {
+            questions = data;
+            return true;
+          }
+        } catch {}
+        return false;
+      }
+
+      let savedTimer;
+      function flashSaved() {
+        savedBadge.classList.add("visible");
+        clearTimeout(savedTimer);
+        savedTimer = setTimeout(
+          () => savedBadge.classList.remove("visible"),
+          1500,
+        );
+      }
+
+      clearStorageBtn.addEventListener("click", () => {
+        if (!confirm("Clear all saved data?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        questions = [];
+        resultsEl.innerHTML = "";
+        toolbar.classList.remove("visible");
+        statsEl.classList.remove("visible");
+        statusEl.className = "status";
       });
-    }
 
-    // --- Deleting ---
-    function deleteQuestion(qi) {
-      const card = resultsEl.children[qi];
-      if (!card) return;
-      card.classList.add("removing");
-      card.addEventListener("animationend", () => {
-        questions.splice(qi, 1);
-        save();
-        renderAll();
+      // --- Dropzone ---
+      dropzone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length) handleFile(fileInput.files[0]);
       });
-    }
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("drag-over");
+      });
+      dropzone.addEventListener("dragleave", () =>
+        dropzone.classList.remove("drag-over"),
+      );
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("drag-over");
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+      });
 
-    function deleteOption(qi, oi) {
-      questions[qi].options.splice(oi, 1);
-      save();
-      rebuildCard(qi);
-    }
+      // --- Copy All ---
+      copyAllJsonBtn.addEventListener("click", () => {
+        if (!questions.length) return;
+        copyToClipboard(JSON.stringify(questions, null, 2), copyAllJsonBtn);
+      });
 
-    // --- Helpers ---
-    function makeIconBtn(svg, title, getTextFn, isAction) {
-      const btn = document.createElement("button");
-      btn.className = "icon-btn";
-      btn.innerHTML = svg;
-      btn.title = title;
-      if (getTextFn && !isAction) {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          copyToClipboard(getTextFn(), btn, true);
+      copyAllTextBtn.addEventListener("click", () => {
+        if (!questions.length) return;
+        const allText = questions
+          .map((q, i) => {
+            let s = `${i + 1}. ${q.question}`;
+            if (q.options.length)
+              s +=
+                "\n" +
+                q.options.map((o, oi) => `   ${markerAt(oi)}) ${o}`).join("\n");
+            return s;
+          })
+          .join("\n\n");
+        copyToClipboard(allText, copyAllTextBtn);
+      });
+
+      function markerAt(i) {
+        return MARKERS[i] || String.fromCharCode(0x0995 + i);
+      }
+
+      // --- File handling ---
+      async function handleFile(file) {
+        if (!file.name.endsWith(".docx")) {
+          showError("Please upload a .docx file");
+          return;
+        }
+        fileNameEl.textContent = file.name;
+        headerFile.classList.add("visible");
+        dropzone.classList.add("has-file");
+        showStatus("Converting " + file.name + "...");
+        resultsEl.innerHTML = "";
+        statsEl.innerHTML = "";
+        statsEl.classList.remove("visible");
+        toolbar.classList.remove("visible");
+
+        const form = new FormData();
+        form.append("file", file);
+        try {
+          const res = await fetch("/api/convert", {
+            method: "POST",
+            body: form,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Conversion failed");
+          questions = data.questions;
+          save();
+          showDone(`${questions.length} questions extracted successfully`);
+          renderStats(data.stats);
+          renderAll();
+        } catch (err) {
+          showError(err.message);
+        }
+      }
+
+      function showStatus(msg) {
+        statusEl.className = "status visible";
+        spinner.style.display = "block";
+        statusText.textContent = msg;
+      }
+      function showDone(msg) {
+        statusEl.className = "status visible done";
+        spinner.style.display = "none";
+        statusText.textContent = msg;
+      }
+      function showError(msg) {
+        statusEl.className = "status visible error";
+        spinner.style.display = "none";
+        statusText.textContent = msg;
+      }
+
+      function renderStats(stats) {
+        const items = [
+          ["Questions", stats.totalQuestions],
+          ["Equations", stats.totalEquations],
+          ["Bijoy Runs", stats.bijoyRunsConverted],
+          ["Tables", stats.tablesProcessed],
+        ];
+        statsEl.innerHTML = items
+          .filter(([, v]) => v > 0)
+          .map(
+            ([l, v]) =>
+              `<div class="stat-chip">${l} <strong>${v}</strong></div>`,
+          )
+          .join("");
+        statsEl.classList.add("visible");
+      }
+
+      // --- Rendering ---
+      function renderAll() {
+        toolbarLabel.textContent = `${questions.length} questions`;
+        toolbar.classList.add("visible");
+        resultsEl.innerHTML = "";
+        questions.forEach((_, i) => resultsEl.appendChild(buildCard(i)));
+      }
+
+      function rebuildCard(qi) {
+        const old = resultsEl.children[qi];
+        if (!old) return;
+        const card = buildCard(qi);
+        resultsEl.replaceChild(card, old);
+        toolbarLabel.textContent = `${questions.length} questions`;
+      }
+
+      function buildCard(qi) {
+        const q = questions[qi];
+        const card = document.createElement("div");
+        card.className = "question-card";
+        card.style.animationDelay = `${Math.min(qi * 30, 300)}ms`;
+
+        const header = document.createElement("div");
+        header.className = "card-header";
+
+        const headerLeft = document.createElement("div");
+        headerLeft.className = "card-header-left";
+        const num = document.createElement("span");
+        num.className = "card-number";
+        num.textContent = `Q${qi + 1}`;
+        headerLeft.appendChild(num);
+
+        const actions = document.createElement("div");
+        actions.className = "card-header-actions";
+        actions.appendChild(
+          makeIconBtn(COPY_SVG, "Copy question", () => q.question, false),
+        );
+        if (q.options.length)
+          actions.appendChild(
+            makeIconBtn(COPY_SVG, "Copy all", () => buildCopyText(q), false),
+          );
+        const delQBtn = makeIconBtn(TRASH_SVG, "Delete question", null, true);
+        delQBtn.classList.add("icon-btn-danger");
+        delQBtn.addEventListener("click", () => deleteQuestion(qi));
+        actions.appendChild(delQBtn);
+
+        header.appendChild(headerLeft);
+        header.appendChild(actions);
+
+        const body = document.createElement("div");
+        body.className = "card-body";
+
+        const qRow = document.createElement("div");
+        qRow.className = "question-row";
+        const qText = document.createElement("div");
+        qText.className = "question-text";
+        renderMath(qText, q.question);
+        qText.addEventListener("click", () =>
+          startEdit(qText, q.question, (val) => {
+            questions[qi].question = val;
+            save();
+            rebuildCard(qi);
+          }),
+        );
+        qRow.appendChild(qText);
+        body.appendChild(qRow);
+
+        const list = document.createElement("ul");
+        list.className = "options-grid";
+        q.options.forEach((opt, oi) =>
+          list.appendChild(buildOptionItem(qi, oi)),
+        );
+        body.appendChild(list);
+
+        const addBtn = document.createElement("button");
+        addBtn.className = "add-option-btn";
+        addBtn.innerHTML = PLUS_SVG + " Add option";
+        addBtn.addEventListener("click", () => {
+          questions[qi].options.push("");
+          save();
+          rebuildCard(qi);
+          const newList = resultsEl.children[qi].querySelector(".options-grid");
+          const lastOpt = newList.lastElementChild;
+          if (lastOpt) {
+            const contentEl = lastOpt.querySelector(".option-content");
+            if (contentEl) contentEl.click();
+          }
+        });
+        body.appendChild(addBtn);
+
+        card.appendChild(header);
+        card.appendChild(body);
+        return card;
+      }
+
+      function buildOptionItem(qi, oi) {
+        const opt = questions[qi].options[oi];
+        const li = document.createElement("li");
+        li.className = "option-item";
+
+        const marker = document.createElement("span");
+        marker.className = "option-marker";
+        marker.textContent = markerAt(oi);
+
+        const content = document.createElement("span");
+        content.className = "option-content";
+        renderMath(content, opt);
+        content.addEventListener("click", () =>
+          startEdit(content, opt, (val) => {
+            questions[qi].options[oi] = val;
+            save();
+            rebuildCard(qi);
+          }),
+        );
+
+        const optActions = document.createElement("span");
+        optActions.className = "option-actions";
+        optActions.appendChild(makeIconBtn(COPY_SVG, "Copy", () => opt, false));
+        const delOptBtn = makeIconBtn(TRASH_SVG, "Delete option", null, true);
+        delOptBtn.classList.add("icon-btn-danger");
+        delOptBtn.addEventListener("click", () => deleteOption(qi, oi));
+        optActions.appendChild(delOptBtn);
+
+        li.appendChild(marker);
+        li.appendChild(content);
+        li.appendChild(optActions);
+        return li;
+      }
+
+      // --- Editing ---
+      function startEdit(el, currentValue, onSave) {
+        if (el.querySelector("textarea")) return;
+        const rect = el.getBoundingClientRect();
+        const ta = document.createElement("textarea");
+        ta.className = "edit-area";
+        ta.value = currentValue;
+        ta.style.minHeight = Math.max(40, rect.height) + "px";
+        el.textContent = "";
+        el.style.padding = "0";
+        el.style.cursor = "default";
+        el.replaceChildren(ta);
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+
+        function finish() {
+          const val = ta.value;
+          if (val !== currentValue) onSave(val);
+          else {
+            el.textContent = "";
+            el.style.padding = "";
+            el.style.cursor = "";
+            renderMath(el, currentValue);
+            el.addEventListener(
+              "click",
+              () => startEdit(el, currentValue, onSave),
+              { once: true },
+            );
+          }
+        }
+
+        ta.addEventListener("blur", finish);
+        ta.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            ta.value = currentValue;
+            ta.blur();
+          }
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            ta.blur();
+          }
         });
       }
-      return btn;
-    }
 
-    function copyToClipboard(text, btn, small) {
-      navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.innerHTML;
-        btn.classList.add("copied");
-        btn.innerHTML = CHECK_SVG;
-        setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("copied"); }, 1200);
-      });
-    }
-
-    function hasLatex(str) { return /\\[a-zA-Z]/.test(str); }
-
-    function renderMath(el, value) {
-      if (!value) { el.textContent = "(empty)"; el.style.fontStyle = "italic"; el.style.color = "var(--text-muted)"; return; }
-      el.style.fontStyle = ""; el.style.color = "";
-      if (!hasLatex(value)) { el.textContent = value; return; }
-      let processed = value;
-      if (!value.includes("\\text{")) {
-        processed = value.replace(/([\s,]*[\u0980-\u09FF\u0964][\u0980-\u09FF\u0964\s,\[\]\(\)0-9=?\u0964:]*)/g, "\\text{$1}");
+      // --- Deleting ---
+      function deleteQuestion(qi) {
+        const card = resultsEl.children[qi];
+        if (!card) return;
+        card.classList.add("removing");
+        card.addEventListener("animationend", () => {
+          questions.splice(qi, 1);
+          save();
+          renderAll();
+        });
       }
-      try { katex.render(processed, el, { throwOnError: false, displayMode: false }); }
-      catch { el.textContent = value; }
-    }
 
-    function buildCopyText(q) {
-      let text = q.question;
-      if (q.options.length) text += "\n" + q.options.map((o, i) => `${markerAt(i)}) ${o}`).join("\n");
-      return text;
-    }
+      function deleteOption(qi, oi) {
+        questions[qi].options.splice(oi, 1);
+        save();
+        rebuildCard(qi);
+      }
 
-    // --- Init: restore from localStorage ---
-    if (loadFromStorage()) {
-      showDone(`Restored ${questions.length} questions from saved data`);
-      renderAll();
-    }
-  </script>
-</body>
+      // --- Helpers ---
+      function makeIconBtn(svg, title, getTextFn, isAction) {
+        const btn = document.createElement("button");
+        btn.className = "icon-btn";
+        btn.innerHTML = svg;
+        btn.title = title;
+        if (getTextFn && !isAction) {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            copyToClipboard(getTextFn(), btn, true);
+          });
+        }
+        return btn;
+      }
+
+      function copyToClipboard(text, btn, small) {
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.innerHTML;
+          btn.classList.add("copied");
+          btn.innerHTML = CHECK_SVG;
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.classList.remove("copied");
+          }, 1200);
+        });
+      }
+
+      function hasLatex(str) {
+        return /\\[a-zA-Z]/.test(str);
+      }
+
+      function renderMath(el, value) {
+        if (!value) {
+          el.textContent = "(empty)";
+          el.style.fontStyle = "italic";
+          el.style.color = "var(--text-muted)";
+          return;
+        }
+        el.style.fontStyle = "";
+        el.style.color = "";
+        const lines = value.split("\n");
+        if (!hasLatex(value)) {
+          el.innerHTML = "";
+          lines.forEach((line, i) => {
+            if (i > 0) el.appendChild(document.createElement("br"));
+            el.appendChild(document.createTextNode(line));
+          });
+          return;
+        }
+        if (lines.length > 1) {
+          el.innerHTML = "";
+          lines.forEach((line, i) => {
+            if (i > 0) el.appendChild(document.createElement("br"));
+            const span = document.createElement("span");
+            let processed = line;
+            if (!line.includes("\\text{")) {
+              processed = line.replace(
+                /([\s,]*[\u0980-\u09FF\u0964][\u0980-\u09FF\u0964\s,\[\]\(\)0-9=?\u0964:]*)/g,
+                "\\text{$1}",
+              );
+            }
+            try {
+              katex.render(processed, span, {
+                throwOnError: false,
+                displayMode: false,
+              });
+            } catch {
+              span.textContent = line;
+            }
+            el.appendChild(span);
+          });
+          return;
+        }
+        let processed = value;
+        if (!value.includes("\\text{")) {
+          processed = value.replace(
+            /([\s,]*[\u0980-\u09FF\u0964][\u0980-\u09FF\u0964\s,\[\]\(\)0-9=?\u0964:]*)/g,
+            "\\text{$1}",
+          );
+        }
+        try {
+          katex.render(processed, el, {
+            throwOnError: false,
+            displayMode: false,
+          });
+        } catch {
+          el.textContent = value;
+        }
+      }
+
+      function buildCopyText(q) {
+        let text = q.question;
+        if (q.options.length)
+          text +=
+            "\n" + q.options.map((o, i) => `${markerAt(i)}) ${o}`).join("\n");
+        return text;
+      }
+
+      // --- Init: restore from localStorage ---
+      if (loadFromStorage()) {
+        showDone(`Restored ${questions.length} questions from saved data`);
+        renderAll();
+      }
+    </script>
+  </body>
 </html>

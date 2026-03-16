@@ -23,10 +23,7 @@ import {
   tryExtractEmbeddedOptions,
   getTextBeforeEmbeddedOptions,
 } from "./OptionDetector.js";
-import {
-  classifyTable,
-  flattenOptionTable,
-} from "../walker/TableParser.js";
+import { classifyTable, flattenOptionTable } from "../walker/TableParser.js";
 
 type State = "IDLE" | "QUESTION" | "OPTIONS";
 
@@ -141,14 +138,14 @@ function handleInQuestion(
     if (embedded) {
       const questionPart = getTextBeforeEmbeddedOptions(getFullTextContent(p));
       if (questionPart) {
-        st.currentQuestion += " " + questionPart;
+        st.currentQuestion += "\n" + questionPart;
       }
       st.currentOptions = embedded;
       finalize(st);
       return;
     }
 
-    st.currentQuestion += " " + text;
+    st.currentQuestion += "\n" + text;
   }
 }
 
@@ -284,7 +281,9 @@ function finalize(st: AssemblerState): void {
   if (st.currentQuestion.trim().length > 0) {
     st.questions.push({
       question: st.currentQuestion.trim(),
-      options: st.currentOptions.map((o) => o.trim()).filter((o) => o.length > 0),
+      options: st.currentOptions
+        .map((o) => o.trim())
+        .filter((o) => o.length > 0),
     });
   }
   st.currentQuestion = "";
