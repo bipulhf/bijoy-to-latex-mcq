@@ -56,11 +56,11 @@ describe("OptionDetector", () => {
       expect(isOptionParagraph(textPara("ঘ. বিশ"))).toBe(true);
     });
 
-    it("detects Roman numeral markers", () => {
-      expect(isOptionParagraph(textPara("i. first"))).toBe(true);
-      expect(isOptionParagraph(textPara("ii) second"))).toBe(true);
-      expect(isOptionParagraph(textPara("iii. third"))).toBe(true);
-      expect(isOptionParagraph(textPara("iv) fourth"))).toBe(true);
+    it("rejects Roman numeral markers (treated as sub-parts)", () => {
+      expect(isOptionParagraph(textPara("i. first"))).toBe(false);
+      expect(isOptionParagraph(textPara("ii) second"))).toBe(false);
+      expect(isOptionParagraph(textPara("iii. third"))).toBe(false);
+      expect(isOptionParagraph(textPara("iv) fourth"))).toBe(false);
     });
 
     it("rejects non-option text", () => {
@@ -83,9 +83,9 @@ describe("OptionDetector", () => {
       expect(stripOptionMarker("(ক) পাঁচ")).toBe("পাঁচ");
     });
 
-    it("strips Roman numeral markers", () => {
-      expect(stripOptionMarker("i. first")).toBe("first");
-      expect(stripOptionMarker("ii) second")).toBe("second");
+    it("does not strip Roman numeral markers", () => {
+      expect(stripOptionMarker("i. first")).toBe("i. first");
+      expect(stripOptionMarker("ii) second")).toBe("ii) second");
     });
 
     it("returns text unchanged if no marker", () => {

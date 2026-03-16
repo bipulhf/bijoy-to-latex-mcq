@@ -1,17 +1,13 @@
 import type { ParsedParagraph, DocNode } from "../types.js";
 import { getFirstTextContent } from "./QuestionDetector.js";
 
-const OPTION_MARKER =
-  /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ]|i{1,3}v?|vi{0,3})[\)\].)।\s]+/u;
+const OPTION_MARKER = /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ])[\)\].)।\s]+/u;
 
-const STRIP_PATTERN =
-  /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ]|i{1,3}v?|vi{0,3})[\)\].)।\s]+/u;
+const STRIP_PATTERN = /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ])[\)\].)।\s]+/u;
 
-const EMBEDDED_OPTIONS_PATTERN =
-  /[\(\[]?(?:[ABCDকখগঘ])[\)\].)।]\s*/gu;
+const EMBEDDED_OPTIONS_PATTERN = /[\(\[]?(?:[ABCDকখগঘ])[\)\].)।]\s*/gu;
 
-const SINGLE_MARKER =
-  /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ]|i{1,3}v?|vi{0,3})[\)\].)।]\s*$/u;
+const SINGLE_MARKER = /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ])[\)\].)।]\s*$/u;
 
 export function isOptionParagraph(p: ParsedParagraph): boolean {
   const text = getFirstTextContent(p).trim();
@@ -36,10 +32,7 @@ export function stripOptionMarker(text: string): string {
   return text.replace(STRIP_PATTERN, "").trim();
 }
 
-export function getOptionText(
-  p: ParsedParagraph,
-  imageToken: string,
-): string {
+export function getOptionText(p: ParsedParagraph, imageToken: string): string {
   let text = "";
   for (const node of p.nodes) {
     if (node.type === "text") {
@@ -113,7 +106,9 @@ export function parseMultiOptionNodes(
   const offset = markerIndices.length - allValues.length;
   for (let m = 0; m < markerIndices.length; m++) {
     const valIdx = m - offset;
-    result.push(valIdx >= 0 && valIdx < allValues.length ? allValues[valIdx]! : "");
+    result.push(
+      valIdx >= 0 && valIdx < allValues.length ? allValues[valIdx]! : "",
+    );
   }
   return result;
 }
@@ -146,9 +141,7 @@ function singleNodeToString(n: DocNode, imageToken: string): string {
 }
 
 function nodesAsText(nodes: DocNode[]): string {
-  return nodes
-    .map((n) => (n.type === "text" ? n.text : ""))
-    .join("");
+  return nodes.map((n) => (n.type === "text" ? n.text : "")).join("");
 }
 
 export function tryExtractEmbeddedOptions(text: string): string[] | null {
@@ -159,8 +152,7 @@ export function tryExtractEmbeddedOptions(text: string): string[] | null {
   for (let i = 0; i < markers.length; i++) {
     const match = markers[i]!;
     const start = match.index! + match[0].length;
-    const end =
-      i + 1 < markers.length ? markers[i + 1]!.index! : text.length;
+    const end = i + 1 < markers.length ? markers[i + 1]!.index! : text.length;
     const optionText = text.slice(start, end).trim();
     options.push(optionText);
   }

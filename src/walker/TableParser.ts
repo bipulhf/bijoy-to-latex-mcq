@@ -74,8 +74,7 @@ export function classifyTable(table: ParsedTable): TableClassification {
   return "data";
 }
 
-const OPTION_MARKER =
-  /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ]|i{1,3}v?|vi{0,3})[\)\].)।\s]+/u;
+const OPTION_MARKER = /^[\s]*[\(\[]?(?:[ABCDabcdকখগঘ])[\)\].)।\s]+/u;
 
 export function isOptionTable(table: ParsedTable): boolean {
   if (table.rows.length === 0) return false;
