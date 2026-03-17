@@ -1233,10 +1233,13 @@
       }
 
       // --- Init: restore from localStorage ---
-      if (loadFromStorage()) {
-        showDone(`Restored ${questions.length} questions from saved data`);
-        renderAll();
-      }
+      // Deferred until 'load' so that the KaTeX defer-script has already run.
+      window.addEventListener("load", () => {
+        if (loadFromStorage()) {
+          showDone(`Restored ${questions.length} questions from saved data`);
+          renderAll();
+        }
+      });
     </script>
   </body>
 </html>
